@@ -64,6 +64,53 @@ main {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.unlock-panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: 0 12px 30px rgb(15 23 42 / 0.08);
+  margin-bottom: 14px;
+  padding: 16px;
+}
+
+.unlock-panel h2 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+
+.unlock-panel p {
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.unlock-panel input {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  font: inherit;
+  margin-top: 6px;
+  padding: 13px 12px;
+  width: 100%;
+}
+
+.unlock-button {
+  background: var(--primary);
+  border: 0;
+  border-radius: 14px;
+  color: #fff;
+  font-weight: 800;
+  margin-top: 12px;
+  padding: 13px;
+  width: 100%;
+}
+
+.unlock-message {
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 700;
+  margin: 10px 0 0;
+}
+
 .summary-card {
   background: var(--card);
   border: 1px solid var(--line);
@@ -242,4 +289,3 @@ label {
     grid-column: span 2;
   }
 }
-
