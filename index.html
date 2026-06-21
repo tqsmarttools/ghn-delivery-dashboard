@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>GHN Thiên Quang</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <p class="eyebrow">Thiên Quang</p>
+      <h1>Đơn cần gọi khách</h1>
+      <p id="syncTime" class="sync-time">Đang tải dữ liệu...</p>
+    </header>
+
+    <main>
+      <section id="summary" class="summary-grid" aria-label="Tổng quan"></section>
+
+      <nav class="filter-tabs" aria-label="Bộ lọc">
+        <button class="tab is-active" data-filter="all">Tất cả</button>
+        <button class="tab" data-filter="CAN_XU_LY">Cần xử lý</button>
+        <button class="tab" data-filter="CHO_HOAN">Chờ hoàn</button>
+      </nav>
+
+      <section id="cards" class="card-list" aria-label="Danh sách đơn"></section>
+    </main>
+
+    <template id="orderCardTemplate">
+      <article class="order-card">
+        <div class="card-topline">
+          <span class="priority"></span>
+          <span class="status"></span>
+        </div>
+        <h2 class="order-code"></h2>
+        <p class="customer"></p>
+        <div class="quick-actions">
+          <a class="call customer-call">Gọi khách</a>
+          <a class="call shipper-call">Gọi shipper</a>
+        </div>
+        <dl class="details">
+          <div>
+            <dt>Lý do shipper báo</dt>
+            <dd class="reason"></dd>
+          </div>
+          <div>
+            <dt>Số lần thất bại</dt>
+            <dd class="fail-count"></dd>
+          </div>
+          <div>
+            <dt>Shipper</dt>
+            <dd class="shipper"></dd>
+          </div>
+          <div>
+            <dt>Đề xuất</dt>
+            <dd class="recommendation"></dd>
+          </div>
+        </dl>
+        <label>
+          Kết quả gọi khách
+          <select class="admin-result">
+            <option>Chưa gọi</option>
+            <option>Khách vẫn nhận hàng</option>
+            <option>Sai SĐT</option>
+            <option>Sai địa chỉ</option>
+            <option>Khách đổi ý thật</option>
+            <option>Không liên hệ được</option>
+            <option>Cần AI xử lý</option>
+            <option>Đã xong</option>
+          </select>
+        </label>
+        <label>
+          Ghi chú admin
+          <textarea class="admin-note" rows="2" placeholder="VD: Khách vẫn nhận, shipper chưa gọi"></textarea>
+        </label>
+        <button class="submit-button" type="button">Đánh dấu cần AI xử lý</button>
+      </article>
+    </template>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
+
