@@ -10,6 +10,16 @@ const state = {
   encryptedData: null,
 };
 
+const noteGuidanceByResult = {
+  shipper_did_not_call: "Cần ghi chú khách xác nhận thế nào, ví dụ: khách nói không có cuộc gọi nhỡ.",
+  info_correct_redeliver: "Cần ghi chú ngắn: khách xác nhận SĐT/địa chỉ đúng, nếu có giờ giao thì ghi thêm.",
+  wrong_address_new_address: "Cần ghi địa chỉ mới đầy đủ: ấp/xã/huyện/tỉnh và ghi chú đường đi nếu có.",
+  wrong_phone_new_phone: "Cần ghi SĐT mới, tên người nhận nếu đổi người nhận.",
+  customer_schedule_redeliver: "Cần ghi ngày/giờ khách hẹn giao lại, ví dụ: giao sau 17h hôm nay.",
+  phone_unreachable_blocked: "Nếu shop có số phụ hoặc thông tin khác thì ghi vào đây.",
+  manual_done: "Cần ghi shop đã xử lý gì: đã gọi GHN, đã sửa đơn, đã hủy hoặc đã báo khách.",
+};
+
 const summaryEl = document.querySelector("#summary");
 const cardsEl = document.querySelector("#cards");
 const syncTimeEl = document.querySelector("#syncTime");
@@ -175,9 +185,47 @@ function renderCards() {
       `${order.driver_name || "Chưa có"} - ${order.driver_phone || ""}`;
     node.querySelector(".recommendation").textContent =
       order.recommended_action || "Shop kiểm tra thêm.";
-    node.querySelector(".submit-button").addEventListener("click", (event) => {
+
+    const resultSelect = node.querySelector(".admin-result");
+    const noteInput = node.querySelector(".admin-note");
+    const noteHint = node.querySelector(".admin-note-hint");
+    const submitButton = node.querySelector(".submit-button");
+
+    resultSelect.addEventListener("change", () => {
+      const selectedOption = resultSelect.selectedOptions[0];
+      noteHint.classList.remove("is-ok");
+      noteHint.textContent =
+        selectedOption?.dataset.requiresNote === "true"
+          ? noteGuidanceByResult[resultSelect.value] || "Mục này cần nhập ghi chú admin."
+          : "";
+    });
+
+    submitButton.addEventListener("click", (event) => {
       const card = event.currentTarget.closest(".order-card");
-      card.querySelector(".admin-result").value = "Cần AI xử lý";
+      const selectedOption = resultSelect.selectedOptions[0];
+      const resultLabel = selectedOption?.textContent?.trim() || "";
+      const noteRequired = selectedOption?.dataset.requiresNote === "true";
+      const note = noteInput.value.trim();
+
+      noteHint.classList.remove("is-ok");
+      if (resultSelect.value === "not_called") {
+        noteHint.textContent = "Chọn kết quả gọi khách trước khi đánh dấu AI xử lý.";
+        resultSelect.focus();
+        return;
+      }
+
+      if (noteRequired && !note) {
+        noteHint.textContent =
+          noteGuidanceByResult[resultSelect.value] || "Mục này cần nhập ghi chú admin.";
+        noteInput.focus();
+        return;
+      }
+
+      card.dataset.aiStatus = "pending";
+      card.dataset.adminResult = resultSelect.value;
+      noteHint.textContent = `Đã đánh dấu chờ AI xử lý: ${resultLabel}.`;
+      noteHint.classList.add("is-ok");
+      submitButton.textContent = "Đã đánh dấu chờ AI xử lý";
     });
     cardsEl.appendChild(node);
   }
