@@ -261,6 +261,17 @@ textarea {
   width: 100%;
 }
 
+.admin-note-hint {
+  color: var(--warning);
+  font-size: 13px;
+  font-weight: 700;
+  margin: 8px 0 0;
+}
+
+.admin-note-hint.is-ok {
+  color: var(--success);
+}
+
 label {
   margin-top: 12px;
 }
