@@ -1,4 +1,4 @@
-const cacheName = "ghn-dashboard-v1";
+const cacheName = "ghn-dashboard-v2";
 const assets = [
   "./",
   "./index.html",
@@ -25,4 +25,3 @@ self.addEventListener("fetch", (event) => {
     fetch(event.request).catch(() => caches.match(event.request).then((cached) => cached || caches.match("./index.html"))),
   );
 });
-
