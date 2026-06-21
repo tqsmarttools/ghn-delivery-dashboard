@@ -16,6 +16,26 @@
     </header>
 
     <main>
+      <section id="unlockPanel" class="unlock-panel" hidden>
+        <h2>Dữ liệu đã được mã hóa</h2>
+        <p>
+          Nhập mật khẩu dashboard để mở danh sách đơn thật. Mật khẩu chỉ dùng trên
+          máy của admin, không gửi về GHN hay GitHub.
+        </p>
+        <form id="unlockForm">
+          <label>
+            Mật khẩu dashboard
+            <input
+              id="dashboardPassword"
+              autocomplete="current-password"
+              inputmode="text"
+              type="password"
+            />
+          </label>
+          <button class="unlock-button" type="submit">Mở dữ liệu</button>
+          <p id="unlockMessage" class="unlock-message" aria-live="polite"></p>
+        </form>
+      </section>
       <section id="summary" class="summary-grid" aria-label="Tổng quan"></section>
 
       <nav class="filter-tabs" aria-label="Bộ lọc">
@@ -81,4 +101,3 @@
     <script src="./app.js" type="module"></script>
   </body>
 </html>
-
