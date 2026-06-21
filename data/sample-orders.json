@@ -1,0 +1,51 @@
+{
+  "generated_at": "2026-06-21 11:54:40",
+  "summary": {
+    "current_needs_action_count": 3,
+    "bucket_counts": {
+      "CAN_XU_LY": 2,
+      "CHO_HOAN": 1
+    }
+  },
+  "orders": [
+    {
+      "bucket": "CAN_XU_LY",
+      "priority": "Cao",
+      "order_code": "GYHAYBEL",
+      "current_status": "delivery_fail",
+      "customer_name": "Khách mẫu",
+      "customer_phone": "0900000000",
+      "fail_count": 1,
+      "latest_reason": "Người nhận không nghe máy",
+      "driver_name": "Shipper mẫu",
+      "driver_phone": "0911111111",
+      "recommended_action": "Gửi số shipper cho khách; yêu cầu GHN giao lại nếu khách xác nhận nhận hàng."
+    },
+    {
+      "bucket": "CAN_XU_LY",
+      "priority": "Cao",
+      "order_code": "GYHANQU9",
+      "current_status": "delivery_fail",
+      "customer_name": "Khách sai SĐT",
+      "customer_phone": "0900000001",
+      "fail_count": 1,
+      "latest_reason": "Sai thông tin SĐT người nhận",
+      "driver_name": "Shipper mẫu 2",
+      "driver_phone": "0911111112",
+      "recommended_action": "Xác minh/sửa SĐT trước, rồi gửi yêu cầu giao lại."
+    },
+    {
+      "bucket": "CHO_HOAN",
+      "priority": "Cao",
+      "order_code": "GYHNXK4F",
+      "current_status": "return",
+      "customer_name": "Khách chờ hoàn",
+      "customer_phone": "0900000002",
+      "fail_count": 3,
+      "latest_reason": "Người nhận đổi ý không mua nữa",
+      "driver_name": "Shipper mẫu 3",
+      "driver_phone": "0911111113",
+      "recommended_action": "Gọi khách xác nhận; nếu khách vẫn nhận hàng thì yêu cầu GHN giao lại/chặn hoàn."
+    }
+  ]
+}
