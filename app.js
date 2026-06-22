@@ -6,6 +6,7 @@ const dataSources = [
 
 const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
 const aiInboxConfigStorageKey = "ghn-dashboard-ai-inbox-config-v1";
+const aiInboxLastAutoSendSignatureKey = "ghn-dashboard-ai-inbox-last-auto-send-signature-v1";
 const aiRequestQueueSchema = "tq-ghn-ai-request-queue/v1";
 
 const state = {
@@ -289,6 +290,29 @@ function buildAiQueuePayload() {
   };
 }
 
+function aiQueueSignature(payload) {
+  return payload.requests
+    .map((request) => `${request.request_id}:${request.updated_at}:${request.status}`)
+    .join("|");
+}
+
+async function maybeAutoSendAiQueue() {
+  const payload = buildAiQueuePayload();
+  if (!payload.request_count || !hasAiInboxConfig()) {
+    return;
+  }
+
+  const signature = aiQueueSignature(payload);
+  if (!signature || localStorage.getItem(aiInboxLastAutoSendSignatureKey) === signature) {
+    return;
+  }
+
+  const sent = await sendAiQueueToInbox({ quiet: true });
+  if (sent) {
+    localStorage.setItem(aiInboxLastAutoSendSignatureKey, signature);
+  }
+}
+
 function formatAiQueueForClipboard(payload) {
   return [
     "YÊU CẦU AI XỬ LÝ VẬN ĐƠN GHN",
@@ -407,6 +431,7 @@ function showDashboard(data) {
   renderSummary(state.data);
   renderAiQueuePanel();
   renderCards();
+  void maybeAutoSendAiQueue();
 }
 
 function renderSummary(data) {
