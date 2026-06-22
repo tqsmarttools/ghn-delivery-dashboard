@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0f172a" />
     <title>GHN Thiên Quang</title>
     <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="stylesheet" href="./styles.css?v=16" />
+    <link rel="stylesheet" href="./styles.css?v=17" />
   </head>
   <body>
     <div id="pullRefreshIndicator" class="pull-refresh-indicator" hidden>
@@ -46,7 +46,7 @@
           <p id="unlockMessage" class="unlock-message" aria-live="polite"></p>
         </form>
       </section>
-      <section id="summary" class="summary-grid" aria-label="Tổng quan"></section>
+      <section id="summary" class="summary-grid" aria-label="Tổng quan và bộ lọc"></section>
       <section id="aiQueuePanel" class="ai-queue-panel" hidden>
         <div>
           <p class="queue-eyebrow">Hàng chờ AI</p>
@@ -80,15 +80,6 @@
           Nhập 4 số cuối SĐT, mã vận đơn, tên khách hoặc shipper để tìm nhanh.
         </p>
       </section>
-
-      <nav class="filter-tabs" aria-label="Bộ lọc">
-        <button class="tab is-active" data-filter="all">Tất cả</button>
-        <button class="tab" data-filter="CAN_XU_LY">Cần xử lý</button>
-        <button class="tab" data-filter="CHO_AI">Chờ AI</button>
-        <button class="tab" data-filter="AI_DA_XU_LY">AI đã xử lý</button>
-        <button class="tab" data-filter="CHO_HOAN">Chờ hoàn</button>
-      </nav>
-
       <section id="cards" class="card-list" aria-label="Danh sách đơn"></section>
     </main>
 
@@ -154,6 +145,6 @@
       </article>
     </template>
 
-    <script src="./app.js?v=16" type="module"></script>
+    <script src="./app.js?v=17" type="module"></script>
   </body>
 </html>

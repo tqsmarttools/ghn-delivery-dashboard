@@ -44,7 +44,6 @@ const searchPanelEl = document.querySelector("#searchPanel");
 const searchInputEl = document.querySelector("#orderSearch");
 const clearSearchButtonEl = document.querySelector("#clearSearch");
 const searchMetaEl = document.querySelector("#searchMeta");
-const filterTabsEl = document.querySelector(".filter-tabs");
 const aiQueuePanelEl = document.querySelector("#aiQueuePanel");
 const aiQueueTitleEl = document.querySelector("#aiQueueTitle");
 const aiQueueDescriptionEl = document.querySelector("#aiQueueDescription");
@@ -329,10 +328,7 @@ function orderMatchesSearch(order) {
 
 function visibleOrders(data = state.data) {
   const orders = Array.isArray(data?.orders) ? data.orders : [];
-  if (state.searchQuery.trim()) {
-    return orders.filter(orderMatchesSearch);
-  }
-  return orders.filter((order) => orderMatchesFilter(order));
+  return orders.filter((order) => orderMatchesFilter(order) && orderMatchesSearch(order));
 }
 
 function sentence(value, fallback) {
@@ -561,7 +557,6 @@ function priorityClass(priority) {
 function setDashboardVisible(isVisible) {
   summaryEl.hidden = !isVisible;
   searchPanelEl.hidden = !isVisible;
-  filterTabsEl.hidden = !isVisible;
   cardsEl.hidden = !isVisible;
   aiQueuePanelEl.hidden = true;
 }
@@ -572,12 +567,15 @@ function renderSearchMeta() {
   clearSearchButtonEl.hidden = !query;
   if (!query) {
     searchMetaEl.textContent =
-      "Nhập 4 số cuối SĐT, mã vận đơn, tên khách hoặc shipper để tìm nhanh.";
+      `Đang xem mục ${filterLabel()}. Nhập 4 số cuối SĐT, mã vận đơn, tên khách hoặc shipper để tìm nhanh.`;
     return;
   }
 
   const count = visibleOrders().length;
-  searchMetaEl.textContent = `Tìm thấy ${count}/${orders.length} đơn. Đang tìm trên toàn bộ danh sách, không giới hạn theo tab.`;
+  const groupCount = orders.filter((order) => orderMatchesFilter(order)).length;
+  const suffix =
+    state.filter === "all" ? "" : " Bấm Cần chú ý để tìm trên toàn bộ danh sách.";
+  searchMetaEl.textContent = `Tìm thấy ${count}/${groupCount} đơn trong mục ${filterLabel()}.${suffix}`;
 }
 
 function setRefreshStatus(message, isError = false) {
@@ -763,23 +761,39 @@ function renderSummary(data) {
   const orders = Array.isArray(data.orders) ? data.orders : [];
   const countByFilter = (filter) => orders.filter((order) => orderMatchesFilter(order, filter)).length;
   const cards = [
-    ["Cần chú ý", summary.current_needs_action_count ?? orders.length],
-    ["Cần xử lý", countByFilter("CAN_XU_LY")],
-    ["Chờ AI", countByFilter("CHO_AI")],
-    ["AI đã xử lý", countByFilter("AI_DA_XU_LY")],
-    ["Chờ hoàn", countByFilter("CHO_HOAN")],
+    ["all", "Cần chú ý", summary.current_needs_action_count ?? orders.length],
+    ["CAN_XU_LY", "Cần xử lý", countByFilter("CAN_XU_LY")],
+    ["CHO_AI", "Chờ AI", countByFilter("CHO_AI")],
+    ["AI_DA_XU_LY", "AI đã xử lý", countByFilter("AI_DA_XU_LY")],
+    ["CHO_HOAN", "Chờ hoàn", countByFilter("CHO_HOAN")],
   ];
 
   summaryEl.innerHTML = cards
     .map(
-      ([label, value]) => `
-        <div class="summary-card">
+      ([filter, label, value]) => `
+        <button
+          class="summary-card ${state.filter === filter ? "is-active" : ""}"
+          type="button"
+          data-filter="${filter}"
+          aria-pressed="${state.filter === filter ? "true" : "false"}"
+        >
           <strong>${value}</strong>
           <span>${label}</span>
-        </div>
+        </button>
       `,
     )
     .join("");
+}
+
+function filterLabel(filter = state.filter) {
+  const labels = {
+    all: "Cần chú ý",
+    CAN_XU_LY: "Cần xử lý",
+    CHO_AI: "Chờ AI",
+    AI_DA_XU_LY: "AI đã xử lý",
+    CHO_HOAN: "Chờ hoàn",
+  };
+  return labels[filter] || labels.all;
 }
 
 function orderMatchesFilter(order, filter = state.filter) {
@@ -951,20 +965,31 @@ function renderCards() {
 }
 
 function bindFilters() {
-  document.querySelectorAll(".tab").forEach((tab) => {
-    tab.addEventListener("click", () => {
-      document.querySelector(".tab.is-active")?.classList.remove("is-active");
-      tab.classList.add("is-active");
-      state.filter = tab.dataset.filter;
-      renderSearchMeta();
-      renderCards();
-    });
+  summaryEl.addEventListener("click", (event) => {
+    if (!(event.target instanceof Element)) {
+      return;
+    }
+
+    const filterButton = event.target.closest("[data-filter]");
+    if (!filterButton) {
+      return;
+    }
+
+    state.filter = filterButton.dataset.filter || "all";
+    renderSummary(state.data);
+    renderSearchMeta();
+    renderCards();
   });
 }
 
 function bindSearch() {
   searchInputEl.addEventListener("input", () => {
+    const hadSearch = Boolean(state.searchQuery.trim());
     state.searchQuery = searchInputEl.value;
+    if (state.searchQuery.trim() && !hadSearch) {
+      state.filter = "all";
+      renderSummary(state.data);
+    }
     renderSearchMeta();
     renderCards();
   });
