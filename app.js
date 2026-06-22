@@ -5,6 +5,7 @@ const dataSources = [
 ];
 
 const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
+const aiRequestQueueSchema = "tq-ghn-ai-request-queue/v1";
 
 const state = {
   filter: "all",
@@ -32,6 +33,12 @@ const unlockFormEl = document.querySelector("#unlockForm");
 const unlockMessageEl = document.querySelector("#unlockMessage");
 const passwordInputEl = document.querySelector("#dashboardPassword");
 const filterTabsEl = document.querySelector(".filter-tabs");
+const aiQueuePanelEl = document.querySelector("#aiQueuePanel");
+const aiQueueTitleEl = document.querySelector("#aiQueueTitle");
+const aiQueueDescriptionEl = document.querySelector("#aiQueueDescription");
+const copyAiQueueButtonEl = document.querySelector("#copyAiQueue");
+const downloadAiQueueButtonEl = document.querySelector("#downloadAiQueue");
+const aiQueueMessageEl = document.querySelector("#aiQueueMessage");
 
 function loadAdminActions() {
   try {
@@ -178,6 +185,115 @@ function buildCustomerMessage(order) {
   ].join("\n");
 }
 
+function suggestedAiAction(result) {
+  const actions = {
+    customer_confirm_receive: "redeliver",
+    shipper_did_not_call: "complain_driver_and_redeliver",
+    info_correct_redeliver: "redeliver",
+    wrong_address_new_address: "update_address_and_redeliver",
+    wrong_phone_new_phone: "update_phone_and_redeliver",
+    customer_schedule_redeliver: "schedule_redelivery",
+    customer_refuse: "review_customer_refusal",
+    shop_no_answer: "wait_for_admin",
+    phone_unreachable_blocked: "review_contact_info",
+    manual_done: "audit_manual_resolution",
+  };
+  return actions[result] || "review";
+}
+
+function buildAiRequest(order, action) {
+  const requestedAt = action.requestedAt || action.updatedAt || new Date().toISOString();
+  return {
+    request_id: action.requestId || `${order.order_code}-${requestedAt.replace(/[^\d]/g, "")}`,
+    order_code: order.order_code,
+    status: action.status || "pending_ai",
+    requested_at: requestedAt,
+    updated_at: action.updatedAt || requestedAt,
+    admin_result: action.result || "",
+    admin_result_label: action.resultLabel || "",
+    admin_note: action.note || "",
+    suggested_ai_action: suggestedAiAction(action.result),
+    order_snapshot: {
+      order_code: order.order_code,
+      bucket: order.bucket || "",
+      current_status: order.current_status || "",
+      priority: order.priority || "",
+      customer_name: order.customer_name || "",
+      customer_phone: cleanPhone(order.customer_phone),
+      driver_name: order.driver_name || "",
+      driver_phone: cleanPhone(order.driver_phone),
+      latest_reason: order.latest_reason || "",
+      fail_count: Number(order.fail_count || 0),
+      recommended_action: order.recommended_action || "",
+    },
+  };
+}
+
+function getAiQueueRequests() {
+  const orders = Array.isArray(state.data?.orders) ? state.data.orders : [];
+  return orders
+    .map((order) => {
+      const action = getAdminAction(order);
+      return action.status === "pending_ai" ? buildAiRequest(order, action) : null;
+    })
+    .filter(Boolean)
+    .sort((left, right) => String(left.requested_at).localeCompare(String(right.requested_at)));
+}
+
+function buildAiQueuePayload() {
+  return {
+    schema: aiRequestQueueSchema,
+    exported_at: new Date().toISOString(),
+    dashboard_generated_at: state.data?.generated_at || null,
+    request_count: getAiQueueRequests().length,
+    requests: getAiQueueRequests(),
+  };
+}
+
+function formatAiQueueForClipboard(payload) {
+  return [
+    "YÊU CẦU AI XỬ LÝ VẬN ĐƠN GHN",
+    `Số yêu cầu: ${payload.request_count}`,
+    `Xuất lúc: ${payload.exported_at}`,
+    "",
+    "AI đọc JSON bên dưới và xử lý từng yêu cầu theo admin_result, admin_note và suggested_ai_action.",
+    "",
+    JSON.stringify(payload, null, 2),
+  ].join("\n");
+}
+
+function downloadText(filename, text) {
+  const blob = new Blob([text], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function setQueueMessage(message, isError = false) {
+  aiQueueMessageEl.textContent = message;
+  aiQueueMessageEl.classList.toggle("is-error", isError);
+}
+
+function renderAiQueuePanel() {
+  const payload = buildAiQueuePayload();
+  const hasRequests = payload.request_count > 0;
+
+  aiQueueTitleEl.textContent = hasRequests
+    ? `${payload.request_count} yêu cầu đang chờ AI`
+    : "Chưa có yêu cầu AI";
+  aiQueueDescriptionEl.textContent = hasRequests
+    ? "Copy hoặc tải gói yêu cầu này để AI xử lý đúng các đơn admin đã xác nhận."
+    : "Các đơn admin bấm yêu cầu AI xử lý sẽ nằm ở đây để copy/tải thành một gói gửi cho AI.";
+  copyAiQueueButtonEl.disabled = !hasRequests;
+  downloadAiQueueButtonEl.disabled = !hasRequests;
+  setQueueMessage("");
+}
+
 function priorityClass(priority) {
   return priority === "Cao" ? "high" : "medium";
 }
@@ -186,6 +302,7 @@ function setDashboardVisible(isVisible) {
   summaryEl.hidden = !isVisible;
   filterTabsEl.hidden = !isVisible;
   cardsEl.hidden = !isVisible;
+  aiQueuePanelEl.hidden = !isVisible;
 }
 
 function showUnlock(envelope) {
@@ -202,6 +319,7 @@ function showDashboard(data) {
   setDashboardVisible(true);
   syncTimeEl.textContent = `Cập nhật: ${state.data.generated_at || "dữ liệu mẫu"}`;
   renderSummary(state.data);
+  renderAiQueuePanel();
   renderCards();
 }
 
@@ -339,6 +457,7 @@ function renderCards() {
       const resultLabel = selectedOption?.textContent?.trim() || "";
       const noteRequired = selectedOption?.dataset.requiresNote === "true";
       const note = noteInput.value.trim();
+      const requestedAt = new Date().toISOString();
 
       noteHint.classList.remove("is-ok");
       if (resultSelect.value === "not_called") {
@@ -355,12 +474,15 @@ function renderCards() {
       }
 
       saveAdminAction(order.order_code, {
+        requestId: `${order.order_code}-${requestedAt.replace(/[^\d]/g, "")}`,
+        requestedAt,
         result: resultSelect.value,
         resultLabel,
         note,
         status: "pending_ai",
       });
       renderSummary(state.data);
+      renderAiQueuePanel();
       if (state.filter === "all") {
         refreshActionUi();
         noteHint.textContent = `Đã gửi yêu cầu AI xử lý: ${resultLabel}.`;
@@ -396,6 +518,35 @@ function bindFilters() {
   });
 }
 
+function bindAiQueue() {
+  copyAiQueueButtonEl.addEventListener("click", async () => {
+    const payload = buildAiQueuePayload();
+    if (!payload.request_count) {
+      setQueueMessage("Chưa có yêu cầu AI nào để copy.", true);
+      return;
+    }
+
+    try {
+      await copyText(formatAiQueueForClipboard(payload));
+      setQueueMessage(`Đã copy ${payload.request_count} yêu cầu AI.`);
+    } catch {
+      setQueueMessage("Chưa copy được gói yêu cầu. Thử nút tải file JSON.", true);
+    }
+  });
+
+  downloadAiQueueButtonEl.addEventListener("click", () => {
+    const payload = buildAiQueuePayload();
+    if (!payload.request_count) {
+      setQueueMessage("Chưa có yêu cầu AI nào để tải.", true);
+      return;
+    }
+
+    const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+    downloadText(`ghn-ai-requests-${stamp}.json`, `${JSON.stringify(payload, null, 2)}\n`);
+    setQueueMessage(`Đã tạo file ${payload.request_count} yêu cầu AI.`);
+  });
+}
+
 function bindUnlock() {
   unlockFormEl.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -414,6 +565,7 @@ function bindUnlock() {
 
 async function init() {
   bindFilters();
+  bindAiQueue();
   bindUnlock();
 
   const loaded = await loadData();
