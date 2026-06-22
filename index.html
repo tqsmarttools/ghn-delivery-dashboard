@@ -6,13 +6,23 @@
     <meta name="theme-color" content="#0f172a" />
     <title>GHN Thiên Quang</title>
     <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="stylesheet" href="./styles.css?v=14" />
+    <link rel="stylesheet" href="./styles.css?v=15" />
   </head>
   <body>
+    <div id="pullRefreshIndicator" class="pull-refresh-indicator" hidden>
+      Kéo xuống để làm mới
+    </div>
+
     <header class="app-header">
-      <p class="eyebrow">Thiên Quang</p>
-      <h1>Đơn cần gọi khách</h1>
-      <p id="syncTime" class="sync-time">Đang tải dữ liệu...</p>
+      <div class="header-main">
+        <div>
+          <p class="eyebrow">Thiên Quang</p>
+          <h1>Đơn cần gọi khách</h1>
+          <p id="syncTime" class="sync-time">Đang tải dữ liệu...</p>
+          <p id="refreshStatus" class="refresh-status" aria-live="polite"></p>
+        </div>
+        <button id="refreshDashboard" class="refresh-button" type="button">Làm mới</button>
+      </div>
     </header>
 
     <main>
@@ -127,6 +137,6 @@
       </article>
     </template>
 
-    <script src="./app.js?v=14" type="module"></script>
+    <script src="./app.js?v=15" type="module"></script>
   </body>
 </html>
