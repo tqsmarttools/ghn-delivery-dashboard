@@ -74,6 +74,27 @@ function isServerAiDone(request) {
   return request?.status === "ai_done" || request?.execution_status === "success";
 }
 
+function timestampValue(value) {
+  const timestamp = Date.parse(value || "");
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function fallbackDoneRequestForOrder(orderCode, action, byOrderCode) {
+  const matched = byOrderCode.get(orderCode);
+  if (!matched) {
+    return null;
+  }
+
+  const actionTime = timestampValue(action.requestedAt || action.updatedAt);
+  const doneTime = timestampValue(
+    matched.execution_updated_at || matched.updated_at || matched.imported_at,
+  );
+  if (!actionTime || !doneTime || doneTime >= actionTime) {
+    return matched;
+  }
+  return null;
+}
+
 function syncAdminActionsFromServer(data) {
   const requests = getServerAiRequests(data).filter(isServerAiDone);
   if (!requests.length) {
@@ -102,9 +123,9 @@ function syncAdminActionsFromServer(data) {
       continue;
     }
 
-    const matched = action.requestId
-      ? byRequestId.get(action.requestId)
-      : byOrderCode.get(orderCode);
+    const matched =
+      (action.requestId ? byRequestId.get(action.requestId) : null) ||
+      fallbackDoneRequestForOrder(orderCode, action, byOrderCode);
     if (!matched) {
       continue;
     }
