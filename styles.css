@@ -206,6 +206,25 @@ main {
   margin: 0 0 12px;
 }
 
+.customer-name {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.copy-phone {
+  background: transparent;
+  border: 0;
+  color: var(--primary);
+  font: inherit;
+  font-weight: 900;
+  padding: 0;
+  text-align: left;
+}
+
+.copy-phone:disabled {
+  color: var(--muted);
+}
+
 .quick-actions {
   display: grid;
   gap: 8px;
@@ -214,7 +233,9 @@ main {
 }
 
 .call,
-.submit-button {
+.submit-button,
+.copy-message-button,
+.ai-done-button {
   border-radius: 14px;
   font-weight: 800;
   text-align: center;
@@ -225,6 +246,26 @@ main {
   background: #ecfdf5;
   color: var(--success);
   padding: 12px;
+}
+
+.copy-message-button {
+  background: #eff6ff;
+  border: 0;
+  color: var(--primary);
+  grid-column: 1 / -1;
+  padding: 12px;
+}
+
+.card-feedback {
+  color: var(--warning);
+  font-size: 13px;
+  font-weight: 800;
+  margin: -4px 0 12px;
+  min-height: 18px;
+}
+
+.card-feedback.is-ok {
+  color: var(--success);
 }
 
 .details {
@@ -276,13 +317,34 @@ label {
   margin-top: 12px;
 }
 
+.ai-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
 .submit-button {
   background: var(--primary);
   border: 0;
   color: #fff;
-  margin-top: 14px;
   padding: 13px;
   width: 100%;
+}
+
+.ai-done-button {
+  background: #f1f5f9;
+  border: 1px solid var(--line);
+  color: #334155;
+  padding: 13px;
+  width: 100%;
+}
+
+.order-card[data-ai-status="pending_ai"] {
+  border-color: #93c5fd;
+}
+
+.order-card[data-ai-status="ai_done"] {
+  border-color: #86efac;
 }
 
 .empty-state {
