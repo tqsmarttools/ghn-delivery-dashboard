@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0f172a" />
     <title>GHN Thiên Quang</title>
     <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="stylesheet" href="./styles.css?v=15" />
+    <link rel="stylesheet" href="./styles.css?v=16" />
   </head>
   <body>
     <div id="pullRefreshIndicator" class="pull-refresh-indicator" hidden>
@@ -62,6 +62,23 @@
           <button id="configureAiInbox" type="button">Cấu hình inbox</button>
         </div>
         <p id="aiQueueMessage" class="queue-message" aria-live="polite"></p>
+      </section>
+
+      <section id="searchPanel" class="search-panel" hidden>
+        <label for="orderSearch">Tìm kiếm nhanh</label>
+        <div class="search-row">
+          <input
+            id="orderSearch"
+            type="search"
+            inputmode="search"
+            autocomplete="off"
+            placeholder="Mã vận đơn, SĐT, 4 số cuối, tên khách..."
+          />
+          <button id="clearSearch" type="button" hidden>Xóa</button>
+        </div>
+        <p id="searchMeta" class="search-meta">
+          Nhập 4 số cuối SĐT, mã vận đơn, tên khách hoặc shipper để tìm nhanh.
+        </p>
       </section>
 
       <nav class="filter-tabs" aria-label="Bộ lọc">
@@ -137,6 +154,6 @@
       </article>
     </template>
 
-    <script src="./app.js?v=15" type="module"></script>
+    <script src="./app.js?v=16" type="module"></script>
   </body>
 </html>
