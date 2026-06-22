@@ -5,6 +5,7 @@ const dataSources = [
 ];
 
 const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
+const aiInboxConfigStorageKey = "ghn-dashboard-ai-inbox-config-v1";
 const aiRequestQueueSchema = "tq-ghn-ai-request-queue/v1";
 
 const state = {
@@ -36,8 +37,10 @@ const filterTabsEl = document.querySelector(".filter-tabs");
 const aiQueuePanelEl = document.querySelector("#aiQueuePanel");
 const aiQueueTitleEl = document.querySelector("#aiQueueTitle");
 const aiQueueDescriptionEl = document.querySelector("#aiQueueDescription");
+const sendAiQueueButtonEl = document.querySelector("#sendAiQueue");
 const copyAiQueueButtonEl = document.querySelector("#copyAiQueue");
 const downloadAiQueueButtonEl = document.querySelector("#downloadAiQueue");
+const configureAiInboxButtonEl = document.querySelector("#configureAiInbox");
 const aiQueueMessageEl = document.querySelector("#aiQueueMessage");
 
 function loadAdminActions() {
@@ -59,6 +62,28 @@ function saveAdminAction(orderCode, action) {
 
 function getAdminAction(order) {
   return state.adminActions[order.order_code] || {};
+}
+
+function loadAiInboxConfig() {
+  try {
+    return JSON.parse(localStorage.getItem(aiInboxConfigStorageKey)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveAiInboxConfig(config) {
+  const cleanConfig = {
+    url: String(config.url || "").trim(),
+    key: String(config.key || "").trim(),
+  };
+  localStorage.setItem(aiInboxConfigStorageKey, JSON.stringify(cleanConfig));
+  return cleanConfig;
+}
+
+function hasAiInboxConfig() {
+  const config = loadAiInboxConfig();
+  return Boolean(config.url && config.key);
 }
 
 async function loadData() {
@@ -279,16 +304,63 @@ function setQueueMessage(message, isError = false) {
   aiQueueMessageEl.classList.toggle("is-error", isError);
 }
 
+async function sendAiQueueToInbox({ quiet = false } = {}) {
+  const payload = buildAiQueuePayload();
+  if (!payload.request_count) {
+    if (!quiet) {
+      setQueueMessage("Chưa có yêu cầu AI nào để gửi inbox.", true);
+    }
+    return false;
+  }
+
+  const config = loadAiInboxConfig();
+  if (!config.url || !config.key) {
+    if (!quiet) {
+      setQueueMessage("Chưa cấu hình inbox. Bấm Cấu hình inbox để nhập Web App URL và key.", true);
+    }
+    return false;
+  }
+
+  const body = {
+    inbox_key: config.key,
+    source: "ghn-dashboard-pwa",
+    payload,
+  };
+
+  try {
+    await fetch(config.url, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8",
+      },
+      body: JSON.stringify(body),
+    });
+    localStorage.setItem("ghn-dashboard-ai-inbox-last-send-at", new Date().toISOString());
+    setQueueMessage(`Đã gửi ${payload.request_count} yêu cầu sang inbox.`);
+    return true;
+  } catch {
+    if (!quiet) {
+      setQueueMessage("Chưa gửi được inbox. Kiểm tra mạng hoặc Web App URL.", true);
+    }
+    return false;
+  }
+}
+
 function renderAiQueuePanel() {
   const payload = buildAiQueuePayload();
   const hasRequests = payload.request_count > 0;
+  const inboxConfigured = hasAiInboxConfig();
 
   aiQueueTitleEl.textContent = hasRequests
     ? `${payload.request_count} yêu cầu đang chờ AI`
     : "Chưa có yêu cầu AI";
   aiQueueDescriptionEl.textContent = hasRequests
-    ? "Copy hoặc tải gói yêu cầu này để AI xử lý đúng các đơn admin đã xác nhận."
-    : "Các đơn admin bấm yêu cầu AI xử lý sẽ nằm ở đây để copy/tải thành một gói gửi cho AI.";
+    ? inboxConfigured
+      ? "Inbox đã cấu hình. Dashboard sẽ gửi queue lên Google Sheet khi admin yêu cầu AI xử lý."
+      : "Chưa cấu hình inbox tự động. Có thể copy/tải thủ công hoặc bấm Cấu hình inbox."
+    : "Các đơn admin bấm yêu cầu AI xử lý sẽ nằm ở đây để copy/tải/gửi inbox cho AI.";
+  sendAiQueueButtonEl.disabled = !hasRequests || !inboxConfigured;
   copyAiQueueButtonEl.disabled = !hasRequests;
   downloadAiQueueButtonEl.disabled = !hasRequests;
   setQueueMessage("");
@@ -452,7 +524,7 @@ function renderCards() {
       }
     }
 
-    function markOrderForAi() {
+    async function markOrderForAi() {
       const selectedOption = resultSelect.selectedOptions[0];
       const resultLabel = selectedOption?.textContent?.trim() || "";
       const noteRequired = selectedOption?.dataset.requiresNote === "true";
@@ -490,6 +562,9 @@ function renderCards() {
       } else {
         renderCards();
       }
+      if (hasAiInboxConfig()) {
+        await sendAiQueueToInbox({ quiet: true });
+      }
     }
 
     resultSelect.addEventListener("change", () => {
@@ -519,6 +594,10 @@ function bindFilters() {
 }
 
 function bindAiQueue() {
+  sendAiQueueButtonEl.addEventListener("click", () => {
+    sendAiQueueToInbox();
+  });
+
   copyAiQueueButtonEl.addEventListener("click", async () => {
     const payload = buildAiQueuePayload();
     if (!payload.request_count) {
@@ -544,6 +623,26 @@ function bindAiQueue() {
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
     downloadText(`ghn-ai-requests-${stamp}.json`, `${JSON.stringify(payload, null, 2)}\n`);
     setQueueMessage(`Đã tạo file ${payload.request_count} yêu cầu AI.`);
+  });
+
+  configureAiInboxButtonEl.addEventListener("click", () => {
+    const current = loadAiInboxConfig();
+    const url = prompt("Dán Google Apps Script Web App URL:", current.url || "");
+    if (url === null) {
+      return;
+    }
+    const key = prompt("Dán inbox key:", current.key || "");
+    if (key === null) {
+      return;
+    }
+
+    const saved = saveAiInboxConfig({ url, key });
+    renderAiQueuePanel();
+    if (saved.url && saved.key) {
+      setQueueMessage("Đã lưu cấu hình inbox trên thiết bị này.");
+    } else {
+      setQueueMessage("Inbox chưa đủ URL/key.", true);
+    }
   });
 }
 
