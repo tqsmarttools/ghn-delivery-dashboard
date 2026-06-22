@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#0f172a" />
     <title>GHN Thiên Quang</title>
     <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="stylesheet" href="./styles.css?v=7" />
+    <link rel="stylesheet" href="./styles.css?v=8" />
   </head>
   <body>
     <header class="app-header">
@@ -37,6 +37,20 @@
         </form>
       </section>
       <section id="summary" class="summary-grid" aria-label="Tổng quan"></section>
+      <section id="aiQueuePanel" class="ai-queue-panel" hidden>
+        <div>
+          <p class="queue-eyebrow">Hàng chờ AI</p>
+          <h2 id="aiQueueTitle">Chưa có yêu cầu AI</h2>
+          <p id="aiQueueDescription">
+            Các đơn admin bấm yêu cầu AI xử lý sẽ nằm ở đây để copy/tải thành một gói gửi cho AI.
+          </p>
+        </div>
+        <div class="queue-actions">
+          <button id="copyAiQueue" type="button">Copy gói yêu cầu AI</button>
+          <button id="downloadAiQueue" type="button">Tải file JSON</button>
+        </div>
+        <p id="aiQueueMessage" class="queue-message" aria-live="polite"></p>
+      </section>
 
       <nav class="filter-tabs" aria-label="Bộ lọc">
         <button class="tab is-active" data-filter="all">Tất cả</button>
@@ -111,6 +125,6 @@
       </article>
     </template>
 
-    <script src="./app.js?v=7" type="module"></script>
+    <script src="./app.js?v=8" type="module"></script>
   </body>
 </html>
