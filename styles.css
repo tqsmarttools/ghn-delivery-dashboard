@@ -270,6 +270,53 @@ main {
   color: var(--danger);
 }
 
+.search-panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 0.05);
+  margin-top: 14px;
+  padding: 12px;
+}
+
+.search-panel[hidden] {
+  display: none;
+}
+
+.search-row {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr auto;
+  margin-top: 6px;
+}
+
+.search-row input {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  padding: 12px;
+  width: 100%;
+}
+
+.search-row button {
+  background: #e2e8f0;
+  border: 0;
+  border-radius: 14px;
+  color: #334155;
+  font: inherit;
+  font-weight: 900;
+  padding: 0 14px;
+}
+
+.search-meta {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  margin: 8px 0 0;
+}
+
 .filter-tabs {
   display: flex;
   gap: 8px;
