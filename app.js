@@ -11,6 +11,7 @@ const aiRequestQueueSchema = "tq-ghn-ai-request-queue/v1";
 
 const state = {
   filter: "all",
+  searchQuery: "",
   data: null,
   encryptedData: null,
   passphrase: "",
@@ -39,6 +40,10 @@ const passwordInputEl = document.querySelector("#dashboardPassword");
 const refreshButtonEl = document.querySelector("#refreshDashboard");
 const refreshStatusEl = document.querySelector("#refreshStatus");
 const pullRefreshIndicatorEl = document.querySelector("#pullRefreshIndicator");
+const searchPanelEl = document.querySelector("#searchPanel");
+const searchInputEl = document.querySelector("#orderSearch");
+const clearSearchButtonEl = document.querySelector("#clearSearch");
+const searchMetaEl = document.querySelector("#searchMeta");
 const filterTabsEl = document.querySelector(".filter-tabs");
 const aiQueuePanelEl = document.querySelector("#aiQueuePanel");
 const aiQueueTitleEl = document.querySelector("#aiQueueTitle");
@@ -272,6 +277,64 @@ function cleanPhone(phone) {
   return String(phone || "").replace(/[^\d+]/g, "");
 }
 
+function cleanDigits(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function normalizeSearchText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase();
+}
+
+function isNumericSearchTerm(term) {
+  const withoutPhoneSeparators = String(term || "").replace(/[()+.\-\s]/g, "");
+  return /^\d+$/.test(withoutPhoneSeparators);
+}
+
+function orderSearchFields(order) {
+  return [
+    order.order_code,
+    order.customer_name,
+    order.customer_phone,
+    order.customer_address,
+    order.driver_name,
+    order.driver_phone,
+    order.latest_reason,
+    order.current_status,
+    order.recommended_action,
+  ];
+}
+
+function orderMatchesSearch(order) {
+  const query = normalizeSearchText(state.searchQuery).trim();
+  if (!query) {
+    return true;
+  }
+
+  const fields = orderSearchFields(order);
+  const textHaystack = normalizeSearchText(fields.join(" "));
+  const digitHaystack = fields.map(cleanDigits).join(" ");
+  return query.split(/\s+/).every((term) => {
+    const digits = cleanDigits(term);
+    if (digits && isNumericSearchTerm(term)) {
+      return textHaystack.includes(term) || digitHaystack.includes(digits);
+    }
+    return textHaystack.includes(term);
+  });
+}
+
+function visibleOrders(data = state.data) {
+  const orders = Array.isArray(data?.orders) ? data.orders : [];
+  if (state.searchQuery.trim()) {
+    return orders.filter(orderMatchesSearch);
+  }
+  return orders.filter((order) => orderMatchesFilter(order));
+}
+
 function sentence(value, fallback) {
   const clean = String(value || "").trim() || fallback;
   return /[.!?]$/.test(clean) ? clean : `${clean}.`;
@@ -497,9 +560,24 @@ function priorityClass(priority) {
 
 function setDashboardVisible(isVisible) {
   summaryEl.hidden = !isVisible;
+  searchPanelEl.hidden = !isVisible;
   filterTabsEl.hidden = !isVisible;
   cardsEl.hidden = !isVisible;
   aiQueuePanelEl.hidden = true;
+}
+
+function renderSearchMeta() {
+  const orders = Array.isArray(state.data?.orders) ? state.data.orders : [];
+  const query = state.searchQuery.trim();
+  clearSearchButtonEl.hidden = !query;
+  if (!query) {
+    searchMetaEl.textContent =
+      "Nhập 4 số cuối SĐT, mã vận đơn, tên khách hoặc shipper để tìm nhanh.";
+    return;
+  }
+
+  const count = visibleOrders().length;
+  searchMetaEl.textContent = `Tìm thấy ${count}/${orders.length} đơn. Đang tìm trên toàn bộ danh sách, không giới hạn theo tab.`;
 }
 
 function setRefreshStatus(message, isError = false) {
@@ -674,6 +752,7 @@ function showDashboard(data) {
   setDashboardVisible(true);
   syncTimeEl.textContent = `Cập nhật: ${state.data.generated_at || "dữ liệu mẫu"}`;
   renderSummary(state.data);
+  renderSearchMeta();
   renderAiQueuePanel();
   renderCards();
   void maybeAutoSendAiQueue();
@@ -726,13 +805,17 @@ function setFeedback(element, message, isOk = true) {
 }
 
 function renderCards() {
-  const orders = (state.data.orders || []).filter((order) => {
-    return orderMatchesFilter(order);
-  });
+  const orders = visibleOrders();
 
   cardsEl.innerHTML = "";
   if (!orders.length) {
-    cardsEl.innerHTML = '<p class="empty-state">Không có đơn trong nhóm này.</p>';
+    const message = state.searchQuery.trim()
+      ? `Không tìm thấy đơn khớp "${state.searchQuery.trim()}".`
+      : "Không có đơn trong nhóm này.";
+    const emptyState = document.createElement("p");
+    emptyState.className = "empty-state";
+    emptyState.textContent = message;
+    cardsEl.appendChild(emptyState);
     return;
   }
 
@@ -838,6 +921,7 @@ function renderCards() {
         status: "pending_ai",
       });
       renderSummary(state.data);
+      renderSearchMeta();
       renderAiQueuePanel();
       if (state.filter === "all") {
         refreshActionUi();
@@ -872,8 +956,25 @@ function bindFilters() {
       document.querySelector(".tab.is-active")?.classList.remove("is-active");
       tab.classList.add("is-active");
       state.filter = tab.dataset.filter;
+      renderSearchMeta();
       renderCards();
     });
+  });
+}
+
+function bindSearch() {
+  searchInputEl.addEventListener("input", () => {
+    state.searchQuery = searchInputEl.value;
+    renderSearchMeta();
+    renderCards();
+  });
+
+  clearSearchButtonEl.addEventListener("click", () => {
+    state.searchQuery = "";
+    searchInputEl.value = "";
+    searchInputEl.focus();
+    renderSearchMeta();
+    renderCards();
   });
 }
 
@@ -949,6 +1050,7 @@ function bindUnlock() {
 
 async function init() {
   bindFilters();
+  bindSearch();
   bindAiQueue();
   bindRefresh();
   bindUnlock();
