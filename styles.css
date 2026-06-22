@@ -129,6 +129,83 @@ main {
   font-size: 12px;
 }
 
+.ai-queue-panel {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgb(37 99 235 / 0.08);
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px;
+}
+
+.ai-queue-panel[hidden] {
+  display: none;
+}
+
+.queue-eyebrow {
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+}
+
+.ai-queue-panel h2 {
+  font-size: 18px;
+  margin: 0 0 4px;
+}
+
+.ai-queue-panel p {
+  margin: 0;
+}
+
+#aiQueueDescription {
+  color: #334155;
+  font-size: 13px;
+}
+
+.queue-actions {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.queue-actions button {
+  border: 0;
+  border-radius: 14px;
+  font-weight: 900;
+  padding: 12px;
+}
+
+#copyAiQueue {
+  background: var(--primary);
+  color: #fff;
+}
+
+#downloadAiQueue {
+  background: #dbeafe;
+  color: var(--primary);
+}
+
+.queue-actions button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.queue-message {
+  color: var(--success);
+  font-size: 13px;
+  font-weight: 800;
+  min-height: 18px;
+}
+
+.queue-message.is-error {
+  color: var(--danger);
+}
+
 .filter-tabs {
   display: flex;
   gap: 8px;
@@ -356,5 +433,9 @@ label {
 
   .summary-card:first-child {
     grid-column: span 2;
+  }
+
+  .queue-actions {
+    grid-template-columns: 1fr;
   }
 }
