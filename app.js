@@ -13,7 +13,9 @@ const state = {
   filter: "all",
   data: null,
   encryptedData: null,
+  passphrase: "",
   adminActions: loadAdminActions(),
+  isRefreshing: false,
 };
 
 const noteGuidanceByResult = {
@@ -34,6 +36,9 @@ const unlockPanelEl = document.querySelector("#unlockPanel");
 const unlockFormEl = document.querySelector("#unlockForm");
 const unlockMessageEl = document.querySelector("#unlockMessage");
 const passwordInputEl = document.querySelector("#dashboardPassword");
+const refreshButtonEl = document.querySelector("#refreshDashboard");
+const refreshStatusEl = document.querySelector("#refreshStatus");
+const pullRefreshIndicatorEl = document.querySelector("#pullRefreshIndicator");
 const filterTabsEl = document.querySelector(".filter-tabs");
 const aiQueuePanelEl = document.querySelector("#aiQueuePanel");
 const aiQueueTitleEl = document.querySelector("#aiQueueTitle");
@@ -497,6 +502,163 @@ function setDashboardVisible(isVisible) {
   aiQueuePanelEl.hidden = true;
 }
 
+function setRefreshStatus(message, isError = false) {
+  refreshStatusEl.textContent = message;
+  refreshStatusEl.classList.toggle("is-error", isError);
+}
+
+function setRefreshBusy(isBusy) {
+  state.isRefreshing = isBusy;
+  refreshButtonEl.disabled = isBusy;
+  refreshButtonEl.textContent = isBusy ? "Đang..." : "Làm mới";
+}
+
+async function refreshDashboard() {
+  if (state.isRefreshing) {
+    return false;
+  }
+
+  setRefreshBusy(true);
+  setRefreshStatus("Đang làm mới dữ liệu...");
+
+  try {
+    const loaded = await loadData();
+    if (loaded.encrypted) {
+      state.encryptedData = loaded.payload;
+      if (!state.passphrase) {
+        showUnlock(loaded.payload);
+        setRefreshStatus("Nhập mật khẩu để mở dữ liệu mới.");
+        return true;
+      }
+
+      const data = await decryptDashboardData(loaded.payload, state.passphrase);
+      showDashboard(data);
+    } else {
+      showDashboard(loaded.payload);
+    }
+
+    const refreshedAt = new Date().toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    setRefreshStatus(`Đã làm mới lúc ${refreshedAt}.`);
+    return true;
+  } catch {
+    setRefreshStatus("Chưa làm mới được. Kiểm tra mạng rồi thử lại.", true);
+    return false;
+  } finally {
+    setRefreshBusy(false);
+  }
+}
+
+function setPullRefreshIndicator(message, { visible = true, ready = false } = {}) {
+  pullRefreshIndicatorEl.textContent = message;
+  pullRefreshIndicatorEl.hidden = !visible;
+  pullRefreshIndicatorEl.classList.toggle("is-visible", visible);
+  pullRefreshIndicatorEl.classList.toggle("is-ready", ready);
+}
+
+function hidePullRefreshIndicator() {
+  pullRefreshIndicatorEl.classList.remove("is-visible", "is-ready");
+  setTimeout(() => {
+    if (!pullRefreshIndicatorEl.classList.contains("is-visible")) {
+      pullRefreshIndicatorEl.hidden = true;
+    }
+  }, 180);
+}
+
+function isInteractiveTarget(target) {
+  return target instanceof Element && Boolean(target.closest("a, button, input, select, textarea"));
+}
+
+function bindPullToRefresh() {
+  const threshold = 86;
+  const pullState = {
+    active: false,
+    startY: 0,
+    distance: 0,
+  };
+
+  document.addEventListener(
+    "touchstart",
+    (event) => {
+      if (
+        event.touches.length !== 1 ||
+        window.scrollY > 0 ||
+        state.isRefreshing ||
+        isInteractiveTarget(event.target)
+      ) {
+        return;
+      }
+
+      pullState.active = true;
+      pullState.startY = event.touches[0].clientY;
+      pullState.distance = 0;
+    },
+    { passive: true },
+  );
+
+  document.addEventListener(
+    "touchmove",
+    (event) => {
+      if (!pullState.active || event.touches.length !== 1) {
+        return;
+      }
+
+      const distance = event.touches[0].clientY - pullState.startY;
+      if (distance <= 0 || window.scrollY > 0) {
+        pullState.active = false;
+        hidePullRefreshIndicator();
+        return;
+      }
+
+      pullState.distance = Math.min(distance, 140);
+      if (pullState.distance > 24) {
+        event.preventDefault();
+        setPullRefreshIndicator(
+          pullState.distance >= threshold ? "Thả tay để làm mới" : "Kéo xuống để làm mới",
+          {
+            visible: true,
+            ready: pullState.distance >= threshold,
+          },
+        );
+      }
+    },
+    { passive: false },
+  );
+
+  document.addEventListener(
+    "touchend",
+    () => {
+      if (!pullState.active) {
+        return;
+      }
+
+      const shouldRefresh = pullState.distance >= threshold;
+      pullState.active = false;
+      pullState.distance = 0;
+
+      if (!shouldRefresh) {
+        hidePullRefreshIndicator();
+        return;
+      }
+
+      setPullRefreshIndicator("Đang làm mới...", { visible: true, ready: true });
+      void refreshDashboard().finally(() => {
+        setTimeout(hidePullRefreshIndicator, 650);
+      });
+    },
+    { passive: true },
+  );
+}
+
+function bindRefresh() {
+  refreshButtonEl.addEventListener("click", () => {
+    void refreshDashboard();
+  });
+  bindPullToRefresh();
+}
+
 function showUnlock(envelope) {
   state.encryptedData = envelope;
   unlockPanelEl.hidden = false;
@@ -775,6 +937,7 @@ function bindUnlock() {
     try {
       const passphrase = passwordInputEl.value;
       const data = await decryptDashboardData(state.encryptedData, passphrase);
+      state.passphrase = passphrase;
       passwordInputEl.value = "";
       unlockMessageEl.textContent = "";
       showDashboard(data);
@@ -787,6 +950,7 @@ function bindUnlock() {
 async function init() {
   bindFilters();
   bindAiQueue();
+  bindRefresh();
   bindUnlock();
 
   const loaded = await loadData();
