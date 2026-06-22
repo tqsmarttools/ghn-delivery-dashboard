@@ -287,7 +287,6 @@ function renderCards() {
     const noteInput = node.querySelector(".admin-note");
     const noteHint = node.querySelector(".admin-note-hint");
     const submitButton = node.querySelector(".submit-button");
-    const aiDoneButton = node.querySelector(".ai-done-button");
     const customerPhone = cleanPhone(order.customer_phone);
 
     copyPhoneButton.textContent = customerPhone ? `${customerPhone} · bấm để copy` : "Chưa có SĐT";
@@ -320,20 +319,22 @@ function renderCards() {
     function refreshActionUi() {
       const actionStatus = getAdminAction(order).status;
       card.dataset.aiStatus = actionStatus || "";
+      submitButton.disabled = false;
       if (actionStatus === "pending_ai") {
         submitButton.textContent = "Đã đánh dấu chờ AI xử lý";
-        aiDoneButton.textContent = "Đánh dấu AI đã xử lý";
         noteHint.textContent = "Đơn đang nằm trong mục Chờ AI.";
         noteHint.classList.add("is-ok");
       } else if (actionStatus === "ai_done") {
-        submitButton.textContent = "Đánh dấu cần AI xử lý";
-        aiDoneButton.textContent = "Đã đánh dấu AI xử lý";
+        submitButton.textContent = "AI đã xử lý xong";
+        submitButton.disabled = true;
         noteHint.textContent = "Đơn đang nằm trong mục AI đã xử lý.";
         noteHint.classList.add("is-ok");
+      } else {
+        submitButton.textContent = "Đánh dấu cần AI xử lý";
       }
     }
 
-    function markOrderForAi(status) {
+    function markOrderForAi() {
       const selectedOption = resultSelect.selectedOptions[0];
       const resultLabel = selectedOption?.textContent?.trim() || "";
       const noteRequired = selectedOption?.dataset.requiresNote === "true";
@@ -357,15 +358,12 @@ function renderCards() {
         result: resultSelect.value,
         resultLabel,
         note,
-        status,
+        status: "pending_ai",
       });
       renderSummary(state.data);
       if (state.filter === "all") {
         refreshActionUi();
-        noteHint.textContent =
-          status === "ai_done"
-            ? `Đã chuyển sang AI đã xử lý: ${resultLabel}.`
-            : `Đã chuyển sang Chờ AI: ${resultLabel}.`;
+        noteHint.textContent = `Đã chuyển sang Chờ AI: ${resultLabel}.`;
         noteHint.classList.add("is-ok");
       } else {
         renderCards();
@@ -381,8 +379,7 @@ function renderCards() {
           : "";
     });
 
-    submitButton.addEventListener("click", () => markOrderForAi("pending_ai"));
-    aiDoneButton.addEventListener("click", () => markOrderForAi("ai_done"));
+    submitButton.addEventListener("click", markOrderForAi);
     refreshActionUi();
     cardsEl.appendChild(node);
   }
