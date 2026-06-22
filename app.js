@@ -4,10 +4,13 @@ const dataSources = [
   { type: "plain", url: "./data/sample-orders.json" },
 ];
 
+const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
+
 const state = {
   filter: "all",
   data: null,
   encryptedData: null,
+  adminActions: loadAdminActions(),
 };
 
 const noteGuidanceByResult = {
@@ -29,6 +32,27 @@ const unlockFormEl = document.querySelector("#unlockForm");
 const unlockMessageEl = document.querySelector("#unlockMessage");
 const passwordInputEl = document.querySelector("#dashboardPassword");
 const filterTabsEl = document.querySelector(".filter-tabs");
+
+function loadAdminActions() {
+  try {
+    return JSON.parse(localStorage.getItem(adminActionsStorageKey)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveAdminAction(orderCode, action) {
+  state.adminActions[orderCode] = {
+    ...(state.adminActions[orderCode] || {}),
+    ...action,
+    updatedAt: new Date().toISOString(),
+  };
+  localStorage.setItem(adminActionsStorageKey, JSON.stringify(state.adminActions));
+}
+
+function getAdminAction(order) {
+  return state.adminActions[order.order_code] || {};
+}
 
 async function loadData() {
   for (const source of dataSources) {
@@ -110,6 +134,50 @@ function phoneLink(phone) {
   return clean ? `tel:${clean}` : "#";
 }
 
+function cleanPhone(phone) {
+  return String(phone || "").replace(/[^\d+]/g, "");
+}
+
+function sentence(value, fallback) {
+  const clean = String(value || "").trim() || fallback;
+  return /[.!?]$/.test(clean) ? clean : `${clean}.`;
+}
+
+async function copyText(value) {
+  const text = String(value || "");
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
+}
+
+function buildCustomerMessage(order) {
+  const failCount = Number(order.fail_count || 0) || 1;
+  const reason = sentence(order.latest_reason, "Chưa có lý do");
+  const driverName = order.driver_name || "Chưa có thông tin";
+  const driverPhone = cleanPhone(order.driver_phone);
+  const shipper = sentence(`${driverName}${driverPhone ? ` - ${driverPhone}` : ""}`, "Chưa có thông tin");
+
+  return [
+    `GIAO HÀNG THẤT BẠI - LẦN ${failCount}!`,
+    "",
+    `Lý do shipper báo: ${reason}`,
+    `Shipper: ${shipper}`,
+    "",
+    "Anh kiểm tra lại giúp shop thông tin trên có đúng không ạ?",
+  ].join("\n");
+}
+
 function priorityClass(priority) {
   return priority === "Cao" ? "high" : "medium";
 }
@@ -140,10 +208,13 @@ function showDashboard(data) {
 function renderSummary(data) {
   const summary = data.summary || {};
   const orders = Array.isArray(data.orders) ? data.orders : [];
+  const countByFilter = (filter) => orders.filter((order) => orderMatchesFilter(order, filter)).length;
   const cards = [
     ["Cần chú ý", summary.current_needs_action_count ?? orders.length],
-    ["Cần xử lý", summary.bucket_counts?.CAN_XU_LY ?? 0],
-    ["Chờ hoàn", summary.bucket_counts?.CHO_HOAN ?? 0],
+    ["Cần xử lý", countByFilter("CAN_XU_LY")],
+    ["Chờ AI", countByFilter("CHO_AI")],
+    ["AI đã xử lý", countByFilter("AI_DA_XU_LY")],
+    ["Chờ hoàn", countByFilter("CHO_HOAN")],
   ];
 
   summaryEl.innerHTML = cards
@@ -158,9 +229,31 @@ function renderSummary(data) {
     .join("");
 }
 
+function orderMatchesFilter(order, filter = state.filter) {
+  const actionStatus = getAdminAction(order).status;
+  if (filter === "all") {
+    return true;
+  }
+  if (filter === "CHO_AI") {
+    return actionStatus === "pending_ai";
+  }
+  if (filter === "AI_DA_XU_LY") {
+    return actionStatus === "ai_done";
+  }
+  if (actionStatus === "pending_ai" || actionStatus === "ai_done") {
+    return false;
+  }
+  return order.bucket === filter;
+}
+
+function setFeedback(element, message, isOk = true) {
+  element.textContent = message;
+  element.classList.toggle("is-ok", isOk);
+}
+
 function renderCards() {
   const orders = (state.data.orders || []).filter((order) => {
-    return state.filter === "all" || order.bucket === state.filter;
+    return orderMatchesFilter(order);
   });
 
   cardsEl.innerHTML = "";
@@ -175,8 +268,7 @@ function renderCards() {
     node.querySelector(".priority").classList.add(priorityClass(order.priority));
     node.querySelector(".status").textContent = order.current_status || "unknown";
     node.querySelector(".order-code").textContent = order.order_code;
-    node.querySelector(".customer").textContent =
-      `${order.customer_name || "Khách"} - ${order.customer_phone || ""}`;
+    node.querySelector(".customer-name").textContent = order.customer_name || "Khách";
     node.querySelector(".customer-call").href = phoneLink(order.customer_phone);
     node.querySelector(".shipper-call").href = phoneLink(order.driver_phone);
     node.querySelector(".reason").textContent = order.latest_reason || "Chưa có lý do";
@@ -186,22 +278,62 @@ function renderCards() {
     node.querySelector(".recommendation").textContent =
       order.recommended_action || "Shop kiểm tra thêm.";
 
+    const savedAction = getAdminAction(order);
+    const card = node.querySelector(".order-card");
+    const feedback = node.querySelector(".card-feedback");
+    const copyPhoneButton = node.querySelector(".copy-phone");
+    const copyMessageButton = node.querySelector(".copy-message-button");
     const resultSelect = node.querySelector(".admin-result");
     const noteInput = node.querySelector(".admin-note");
     const noteHint = node.querySelector(".admin-note-hint");
     const submitButton = node.querySelector(".submit-button");
+    const aiDoneButton = node.querySelector(".ai-done-button");
+    const customerPhone = cleanPhone(order.customer_phone);
 
-    resultSelect.addEventListener("change", () => {
-      const selectedOption = resultSelect.selectedOptions[0];
-      noteHint.classList.remove("is-ok");
-      noteHint.textContent =
-        selectedOption?.dataset.requiresNote === "true"
-          ? noteGuidanceByResult[resultSelect.value] || "Mục này cần nhập ghi chú admin."
-          : "";
+    copyPhoneButton.textContent = customerPhone ? `${customerPhone} · bấm để copy` : "Chưa có SĐT";
+    copyPhoneButton.disabled = !customerPhone;
+    copyPhoneButton.addEventListener("click", async () => {
+      try {
+        await copyText(customerPhone);
+        setFeedback(feedback, "Đã copy SĐT khách.");
+      } catch {
+        setFeedback(feedback, "Chưa copy được SĐT. Admin copy thủ công giúp em.", false);
+      }
     });
 
-    submitButton.addEventListener("click", (event) => {
-      const card = event.currentTarget.closest(".order-card");
+    copyMessageButton.addEventListener("click", async () => {
+      try {
+        await copyText(buildCustomerMessage(order));
+        setFeedback(feedback, "Đã copy tin nhắn gửi khách.");
+      } catch {
+        setFeedback(feedback, "Chưa copy được tin nhắn. Admin copy thủ công giúp em.", false);
+      }
+    });
+
+    if (savedAction.result) {
+      resultSelect.value = savedAction.result;
+    }
+    if (savedAction.note) {
+      noteInput.value = savedAction.note;
+    }
+
+    function refreshActionUi() {
+      const actionStatus = getAdminAction(order).status;
+      card.dataset.aiStatus = actionStatus || "";
+      if (actionStatus === "pending_ai") {
+        submitButton.textContent = "Đã đánh dấu chờ AI xử lý";
+        aiDoneButton.textContent = "Đánh dấu AI đã xử lý";
+        noteHint.textContent = "Đơn đang nằm trong mục Chờ AI.";
+        noteHint.classList.add("is-ok");
+      } else if (actionStatus === "ai_done") {
+        submitButton.textContent = "Đánh dấu cần AI xử lý";
+        aiDoneButton.textContent = "Đã đánh dấu AI xử lý";
+        noteHint.textContent = "Đơn đang nằm trong mục AI đã xử lý.";
+        noteHint.classList.add("is-ok");
+      }
+    }
+
+    function markOrderForAi(status) {
       const selectedOption = resultSelect.selectedOptions[0];
       const resultLabel = selectedOption?.textContent?.trim() || "";
       const noteRequired = selectedOption?.dataset.requiresNote === "true";
@@ -221,12 +353,37 @@ function renderCards() {
         return;
       }
 
-      card.dataset.aiStatus = "pending";
-      card.dataset.adminResult = resultSelect.value;
-      noteHint.textContent = `Đã đánh dấu chờ AI xử lý: ${resultLabel}.`;
-      noteHint.classList.add("is-ok");
-      submitButton.textContent = "Đã đánh dấu chờ AI xử lý";
+      saveAdminAction(order.order_code, {
+        result: resultSelect.value,
+        resultLabel,
+        note,
+        status,
+      });
+      renderSummary(state.data);
+      if (state.filter === "all") {
+        refreshActionUi();
+        noteHint.textContent =
+          status === "ai_done"
+            ? `Đã chuyển sang AI đã xử lý: ${resultLabel}.`
+            : `Đã chuyển sang Chờ AI: ${resultLabel}.`;
+        noteHint.classList.add("is-ok");
+      } else {
+        renderCards();
+      }
+    }
+
+    resultSelect.addEventListener("change", () => {
+      const selectedOption = resultSelect.selectedOptions[0];
+      noteHint.classList.remove("is-ok");
+      noteHint.textContent =
+        selectedOption?.dataset.requiresNote === "true"
+          ? noteGuidanceByResult[resultSelect.value] || "Mục này cần nhập ghi chú admin."
+          : "";
     });
+
+    submitButton.addEventListener("click", () => markOrderForAi("pending_ai"));
+    aiDoneButton.addEventListener("click", () => markOrderForAi("ai_done"));
+    refreshActionUi();
     cardsEl.appendChild(node);
   }
 }
