@@ -31,6 +31,13 @@ body {
   z-index: 3;
 }
 
+.header-main {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
 .eyebrow {
   color: #93c5fd;
   font-size: 12px;
@@ -50,6 +57,61 @@ h1 {
   color: #cbd5e1;
   font-size: 13px;
   margin: 8px 0 0;
+}
+
+.refresh-status {
+  color: #bfdbfe;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 6px 0 0;
+  min-height: 15px;
+}
+
+.refresh-status.is-error {
+  color: #fecaca;
+}
+
+.refresh-button {
+  background: rgb(37 99 235 / 0.22);
+  border: 1px solid rgb(191 219 254 / 0.45);
+  border-radius: 999px;
+  color: #fff;
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  padding: 9px 12px;
+}
+
+.refresh-button:disabled {
+  opacity: 0.7;
+}
+
+.pull-refresh-indicator {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgb(15 23 42 / 0.18);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+  left: 50%;
+  padding: 9px 14px;
+  position: fixed;
+  top: 10px;
+  transform: translate(-50%, -64px);
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+  z-index: 20;
+}
+
+.pull-refresh-indicator.is-visible {
+  transform: translate(-50%, 0);
+}
+
+.pull-refresh-indicator.is-ready {
+  color: var(--primary);
 }
 
 main {
