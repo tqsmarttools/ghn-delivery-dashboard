@@ -412,7 +412,7 @@ function setDashboardVisible(isVisible) {
   summaryEl.hidden = !isVisible;
   filterTabsEl.hidden = !isVisible;
   cardsEl.hidden = !isVisible;
-  aiQueuePanelEl.hidden = !isVisible;
+  aiQueuePanelEl.hidden = true;
 }
 
 function showUnlock(envelope) {
