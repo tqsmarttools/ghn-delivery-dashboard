@@ -180,12 +180,14 @@ main {
   padding: 12px;
 }
 
-#copyAiQueue {
+#sendAiQueue {
   background: var(--primary);
   color: #fff;
 }
 
-#downloadAiQueue {
+#copyAiQueue,
+#downloadAiQueue,
+#configureAiInbox {
   background: #dbeafe;
   color: var(--primary);
 }
