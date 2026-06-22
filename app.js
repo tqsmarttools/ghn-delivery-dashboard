@@ -321,7 +321,7 @@ function renderCards() {
       card.dataset.aiStatus = actionStatus || "";
       submitButton.disabled = false;
       if (actionStatus === "pending_ai") {
-        submitButton.textContent = "Đã đánh dấu chờ AI xử lý";
+        submitButton.textContent = "Đã gửi yêu cầu AI xử lý";
         noteHint.textContent = "Đơn đang nằm trong mục Chờ AI.";
         noteHint.classList.add("is-ok");
       } else if (actionStatus === "ai_done") {
@@ -330,7 +330,7 @@ function renderCards() {
         noteHint.textContent = "Đơn đang nằm trong mục AI đã xử lý.";
         noteHint.classList.add("is-ok");
       } else {
-        submitButton.textContent = "Đánh dấu cần AI xử lý";
+        submitButton.textContent = "Yêu cầu AI xử lý";
       }
     }
 
@@ -342,7 +342,7 @@ function renderCards() {
 
       noteHint.classList.remove("is-ok");
       if (resultSelect.value === "not_called") {
-        noteHint.textContent = "Chọn kết quả gọi khách trước khi đánh dấu AI xử lý.";
+        noteHint.textContent = "Chọn kết quả gọi khách trước khi yêu cầu AI xử lý.";
         resultSelect.focus();
         return;
       }
@@ -363,7 +363,7 @@ function renderCards() {
       renderSummary(state.data);
       if (state.filter === "all") {
         refreshActionUi();
-        noteHint.textContent = `Đã chuyển sang Chờ AI: ${resultLabel}.`;
+        noteHint.textContent = `Đã gửi yêu cầu AI xử lý: ${resultLabel}.`;
         noteHint.classList.add("is-ok");
       } else {
         renderCards();
