@@ -64,19 +64,33 @@ function getAdminAction(order) {
   return state.adminActions[order.order_code] || {};
 }
 
+function normalizeAiInboxConfig(config) {
+  return {
+    url: String(config?.url || "").trim(),
+    key: String(config?.key || "").trim(),
+  };
+}
+
+function getEmbeddedAiInboxConfig() {
+  return normalizeAiInboxConfig(state.data?.ai_inbox || state.data?.aiInbox || {});
+}
+
 function loadAiInboxConfig() {
   try {
-    return JSON.parse(localStorage.getItem(aiInboxConfigStorageKey)) || {};
+    const localConfig = normalizeAiInboxConfig(
+      JSON.parse(localStorage.getItem(aiInboxConfigStorageKey)) || {},
+    );
+    if (localConfig.url && localConfig.key) {
+      return localConfig;
+    }
   } catch {
-    return {};
+    // Fall back to the encrypted dashboard payload after unlock.
   }
+  return getEmbeddedAiInboxConfig();
 }
 
 function saveAiInboxConfig(config) {
-  const cleanConfig = {
-    url: String(config.url || "").trim(),
-    key: String(config.key || "").trim(),
-  };
+  const cleanConfig = normalizeAiInboxConfig(config);
   localStorage.setItem(aiInboxConfigStorageKey, JSON.stringify(cleanConfig));
   return cleanConfig;
 }
