@@ -65,6 +65,67 @@ function getAdminAction(order) {
   return state.adminActions[order.order_code] || {};
 }
 
+function getServerAiRequests(data) {
+  const statusPayload = data?.ai_request_status || data?.aiRequestStatus || {};
+  return Array.isArray(statusPayload.requests) ? statusPayload.requests : [];
+}
+
+function isServerAiDone(request) {
+  return request?.status === "ai_done" || request?.execution_status === "success";
+}
+
+function syncAdminActionsFromServer(data) {
+  const requests = getServerAiRequests(data).filter(isServerAiDone);
+  if (!requests.length) {
+    return 0;
+  }
+
+  const byRequestId = new Map();
+  const byOrderCode = new Map();
+  for (const request of requests) {
+    if (request.request_id) {
+      byRequestId.set(request.request_id, request);
+    }
+    if (request.order_code) {
+      const existing = byOrderCode.get(request.order_code);
+      const existingTime = String(existing?.execution_updated_at || existing?.updated_at || "");
+      const requestTime = String(request.execution_updated_at || request.updated_at || "");
+      if (!existing || requestTime >= existingTime) {
+        byOrderCode.set(request.order_code, request);
+      }
+    }
+  }
+
+  let changed = 0;
+  for (const [orderCode, action] of Object.entries(state.adminActions)) {
+    if (action.status !== "pending_ai") {
+      continue;
+    }
+
+    const matched = action.requestId
+      ? byRequestId.get(action.requestId)
+      : byOrderCode.get(orderCode);
+    if (!matched) {
+      continue;
+    }
+
+    state.adminActions[orderCode] = {
+      ...action,
+      status: "ai_done",
+      aiDoneAt: matched.execution_updated_at || matched.updated_at || new Date().toISOString(),
+      executionStatus: matched.execution_status || "success",
+      executionResults: matched.execution_results || [],
+      updatedAt: new Date().toISOString(),
+    };
+    changed += 1;
+  }
+
+  if (changed) {
+    localStorage.setItem(adminActionsStorageKey, JSON.stringify(state.adminActions));
+  }
+  return changed;
+}
+
 function normalizeAiInboxConfig(config) {
   return {
     url: String(config?.url || "").trim(),
@@ -425,6 +486,7 @@ function showUnlock(envelope) {
 
 function showDashboard(data) {
   state.data = data;
+  syncAdminActionsFromServer(state.data);
   unlockPanelEl.hidden = true;
   setDashboardVisible(true);
   syncTimeEl.textContent = `Cập nhật: ${state.data.generated_at || "dữ liệu mẫu"}`;
