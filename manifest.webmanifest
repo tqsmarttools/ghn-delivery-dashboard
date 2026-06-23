@@ -1,10 +1,27 @@
 {
-  "name": "GHN Thiên Quang",
+  "id": "./",
+  "name": "GHN Thien Quang",
   "short_name": "GHN TQ",
-  "description": "Dashboard xử lý đơn GHN giao thất bại cho admin Thiên Quang.",
-  "start_url": "./index.html?v=9",
+  "description": "Dashboard xu ly don GHN giao that bai cho admin Thien Quang.",
+  "start_url": "./?source=pwa",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
-  "icons": []
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
