@@ -8,6 +8,7 @@ const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
 const aiInboxConfigStorageKey = "ghn-dashboard-ai-inbox-config-v1";
 const aiInboxLastAutoSendSignatureKey = "ghn-dashboard-ai-inbox-last-auto-send-signature-v1";
 const dashboardSessionPassphraseKey = "ghn-dashboard-passphrase-session-v1";
+const dashboardRememberedPassphraseKey = "ghn-dashboard-passphrase-device-v1";
 const aiRequestQueueSchema = "tq-ghn-ai-request-queue/v1";
 
 const state = {
@@ -15,7 +16,7 @@ const state = {
   searchQuery: "",
   data: null,
   encryptedData: null,
-  passphrase: loadSessionPassphrase(),
+  passphrase: loadRememberedPassphrase() || loadSessionPassphrase(),
   adminActions: loadAdminActions(),
   serverAiActions: new Map(),
   isRefreshing: false,
@@ -72,6 +73,14 @@ function loadSessionPassphrase() {
   }
 }
 
+function loadRememberedPassphrase() {
+  try {
+    return localStorage.getItem(dashboardRememberedPassphraseKey) || "";
+  } catch {
+    return "";
+  }
+}
+
 function saveSessionPassphrase(passphrase) {
   try {
     sessionStorage.setItem(dashboardSessionPassphraseKey, passphrase);
@@ -80,11 +89,29 @@ function saveSessionPassphrase(passphrase) {
   }
 }
 
+function rememberPassphrase(passphrase) {
+  saveSessionPassphrase(passphrase);
+  try {
+    localStorage.setItem(dashboardRememberedPassphraseKey, passphrase);
+  } catch {
+    // Fall back to the current session when persistent storage is unavailable.
+  }
+}
+
 function clearSessionPassphrase() {
   try {
     sessionStorage.removeItem(dashboardSessionPassphraseKey);
   } catch {
     // Nothing to clear when sessionStorage is unavailable.
+  }
+}
+
+function clearRememberedPassphrase() {
+  clearSessionPassphrase();
+  try {
+    localStorage.removeItem(dashboardRememberedPassphraseKey);
+  } catch {
+    // Nothing to clear when persistent storage is unavailable.
   }
 }
 
@@ -1221,7 +1248,7 @@ function bindUnlock() {
         const loaded = await ensureDataLoad();
         if (!loaded.encrypted) {
           state.passphrase = passphrase;
-          saveSessionPassphrase(passphrase);
+          rememberPassphrase(passphrase);
           passwordInputEl.value = "";
           unlockMessageEl.textContent = "";
           showDashboard(loaded.payload);
@@ -1231,13 +1258,13 @@ function bindUnlock() {
       }
       const data = await decryptDashboardData(state.encryptedData, passphrase);
       state.passphrase = passphrase;
-      saveSessionPassphrase(passphrase);
+      rememberPassphrase(passphrase);
       passwordInputEl.value = "";
       unlockMessageEl.textContent = "";
       showDashboard(data);
     } catch {
       state.passphrase = "";
-      clearSessionPassphrase();
+      clearRememberedPassphrase();
       unlockMessageEl.textContent = "Mật khẩu chưa đúng hoặc file dữ liệu bị lỗi.";
     }
   });
@@ -1262,7 +1289,7 @@ async function init() {
             return;
           } catch {
             state.passphrase = "";
-            clearSessionPassphrase();
+            clearRememberedPassphrase();
           }
         }
         showUnlock(loaded.payload);
