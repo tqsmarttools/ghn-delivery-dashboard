@@ -7,6 +7,7 @@ const dataSources = [
 const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
 const aiInboxConfigStorageKey = "ghn-dashboard-ai-inbox-config-v1";
 const aiInboxLastAutoSendSignatureKey = "ghn-dashboard-ai-inbox-last-auto-send-signature-v1";
+const dashboardSessionPassphraseKey = "ghn-dashboard-passphrase-session-v1";
 const aiRequestQueueSchema = "tq-ghn-ai-request-queue/v1";
 
 const state = {
@@ -14,7 +15,7 @@ const state = {
   searchQuery: "",
   data: null,
   encryptedData: null,
-  passphrase: "",
+  passphrase: loadSessionPassphrase(),
   adminActions: loadAdminActions(),
   serverAiActions: new Map(),
   isRefreshing: false,
@@ -60,6 +61,30 @@ function loadAdminActions() {
     return JSON.parse(localStorage.getItem(adminActionsStorageKey)) || {};
   } catch {
     return {};
+  }
+}
+
+function loadSessionPassphrase() {
+  try {
+    return sessionStorage.getItem(dashboardSessionPassphraseKey) || "";
+  } catch {
+    return "";
+  }
+}
+
+function saveSessionPassphrase(passphrase) {
+  try {
+    sessionStorage.setItem(dashboardSessionPassphraseKey, passphrase);
+  } catch {
+    // Keep the passphrase in memory only when sessionStorage is unavailable.
+  }
+}
+
+function clearSessionPassphrase() {
+  try {
+    sessionStorage.removeItem(dashboardSessionPassphraseKey);
+  } catch {
+    // Nothing to clear when sessionStorage is unavailable.
   }
 }
 
@@ -805,9 +830,9 @@ function bindPullToRefresh() {
         return;
       }
 
+      event.preventDefault();
       pullState.distance = Math.min(distance, 140);
       if (pullState.distance > 24) {
-        event.preventDefault();
         setPullRefreshIndicator(
           pullState.distance >= threshold ? "Thả tay để làm mới" : "Kéo xuống để làm mới",
           {
@@ -1196,6 +1221,7 @@ function bindUnlock() {
         const loaded = await ensureDataLoad();
         if (!loaded.encrypted) {
           state.passphrase = passphrase;
+          saveSessionPassphrase(passphrase);
           passwordInputEl.value = "";
           unlockMessageEl.textContent = "";
           showDashboard(loaded.payload);
@@ -1205,10 +1231,13 @@ function bindUnlock() {
       }
       const data = await decryptDashboardData(state.encryptedData, passphrase);
       state.passphrase = passphrase;
+      saveSessionPassphrase(passphrase);
       passwordInputEl.value = "";
       unlockMessageEl.textContent = "";
       showDashboard(data);
     } catch {
+      state.passphrase = "";
+      clearSessionPassphrase();
       unlockMessageEl.textContent = "Mật khẩu chưa đúng hoặc file dữ liệu bị lỗi.";
     }
   });
@@ -1223,8 +1252,19 @@ async function init() {
 
   showUnlockShell("Đang tải dữ liệu mới nhất ở nền...");
   ensureDataLoad()
-    .then((loaded) => {
+    .then(async (loaded) => {
       if (loaded.encrypted) {
+        state.encryptedData = loaded.payload;
+        if (state.passphrase) {
+          try {
+            const data = await decryptDashboardData(loaded.payload, state.passphrase);
+            showDashboard(data);
+            return;
+          } catch {
+            state.passphrase = "";
+            clearSessionPassphrase();
+          }
+        }
         showUnlock(loaded.payload);
         unlockMessageEl.textContent = "";
       } else {
