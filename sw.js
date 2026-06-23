@@ -1,9 +1,9 @@
-const cacheName = "ghn-dashboard-v20";
+const cacheName = "ghn-dashboard-v21";
 const assets = [
   "./",
   "./index.html",
   "./styles.css?v=17",
-  "./app.js?v=20",
+  "./app.js?v=21",
   "./manifest.webmanifest?v=18",
   "./icons/icon-192.png?v=18",
   "./icons/icon-512.png?v=18",
@@ -22,15 +22,21 @@ self.addEventListener("activate", (event) => {
       const keys = await caches.keys();
       await Promise.all(keys.filter((key) => key !== cacheName).map((key) => caches.delete(key)));
       await self.clients.claim();
-
-      const windows = await self.clients.matchAll({ type: "window" });
-      await Promise.all(windows.map((client) => client.navigate(client.url)));
     })(),
   );
 });
 
 self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+  const isLiveDataRequest = url.pathname.endsWith("/data/latest.enc.json");
+  if (isLiveDataRequest) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request).then((cached) => cached || caches.match("./index.html"))),
+    caches.match(event.request).then((cached) =>
+      cached || fetch(event.request).catch(() => caches.match("./index.html")),
+    ),
   );
 });
