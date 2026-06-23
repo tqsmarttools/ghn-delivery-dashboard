@@ -360,6 +360,34 @@ function cleanDigits(value) {
   return String(value || "").replace(/\D/g, "");
 }
 
+function ghnStatusLabel(status) {
+  const labels = {
+    ready_to_pick: "Chờ lấy hàng",
+    picking: "Đang lấy hàng",
+    money_collect_picking: "Đang lấy hàng",
+    picked: "Đã lấy hàng",
+    storing: "Đang lưu kho",
+    transporting: "Đang luân chuyển",
+    sorting: "Đang phân loại",
+    delivering: "Đang giao hàng",
+    money_collect_delivering: "Đang giao / thu tiền",
+    delivered: "Giao thành công",
+    delivery_fail: "Giao không thành công",
+    waiting_to_return: "Chờ hoàn hàng",
+    return: "Đang hoàn hàng",
+    return_transporting: "Đang chuyển hoàn",
+    return_sorting: "Đang phân loại hoàn",
+    returning: "Đang giao hoàn shop",
+    return_fail: "Hoàn hàng thất bại",
+    returned: "Đã hoàn hàng",
+    cancel: "Đã hủy",
+    exception: "Có sự cố",
+    damage: "Hàng hư hỏng",
+    lost: "Thất lạc",
+  };
+  return labels[status] || status || "Không rõ trạng thái";
+}
+
 function normalizeSearchText(value) {
   return String(value || "")
     .normalize("NFD")
@@ -918,7 +946,9 @@ function renderCards() {
     const node = template.content.cloneNode(true);
     node.querySelector(".priority").textContent = order.priority || "Trung bình";
     node.querySelector(".priority").classList.add(priorityClass(order.priority));
-    node.querySelector(".status").textContent = order.current_status || "unknown";
+    const statusEl = node.querySelector(".status");
+    statusEl.textContent = ghnStatusLabel(order.current_status);
+    statusEl.title = order.current_status || "";
     node.querySelector(".order-code").textContent = order.order_code;
     node.querySelector(".customer-name").textContent = order.customer_name || "Khách";
     node.querySelector(".customer-call").href = phoneLink(order.customer_phone);
