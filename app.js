@@ -16,6 +16,7 @@ const state = {
   encryptedData: null,
   passphrase: "",
   adminActions: loadAdminActions(),
+  serverAiActions: new Map(),
   isRefreshing: false,
 };
 
@@ -71,7 +72,32 @@ function saveAdminAction(orderCode, action) {
 }
 
 function getAdminAction(order) {
-  return state.adminActions[order.order_code] || {};
+  const localAction = state.adminActions[order.order_code] || {};
+  const serverAction = state.serverAiActions.get(order.order_code);
+  if (!serverAction) {
+    return localAction;
+  }
+
+  if (!localAction.status) {
+    return serverAction;
+  }
+
+  if (serverAction.status === "ai_done") {
+    const localTime = timestampValue(localAction.requestedAt || localAction.updatedAt);
+    const serverTime = timestampValue(serverAction.aiDoneAt || serverAction.updatedAt);
+    if (
+      localAction.status === "pending_ai" &&
+      (!localTime || !serverTime || serverTime >= localTime || localAction.requestId === serverAction.requestId)
+    ) {
+      return {
+        ...localAction,
+        ...serverAction,
+        status: "ai_done",
+      };
+    }
+  }
+
+  return localAction;
 }
 
 function getServerAiRequests(data) {
@@ -81,6 +107,10 @@ function getServerAiRequests(data) {
 
 function isServerAiDone(request) {
   return request?.status === "ai_done" || request?.execution_status === "success";
+}
+
+function isServerAiPending(request) {
+  return request?.status === "pending_ai" && request?.execution_status !== "success";
 }
 
 function timestampValue(value) {
@@ -102,6 +132,56 @@ function fallbackDoneRequestForOrder(orderCode, action, byOrderCode) {
     return matched;
   }
   return null;
+}
+
+function serverRequestTimestamp(request) {
+  return timestampValue(
+    request.execution_updated_at || request.updated_at || request.imported_at || request.requested_at,
+  );
+}
+
+function actionFromServerRequest(request) {
+  const status = isServerAiDone(request) ? "ai_done" : isServerAiPending(request) ? "pending_ai" : "";
+  if (!status) {
+    return null;
+  }
+
+  return {
+    requestId: request.request_id || "",
+    requestedAt: request.requested_at || null,
+    updatedAt: request.updated_at || request.imported_at || null,
+    status,
+    aiDoneAt: request.execution_updated_at || request.updated_at || null,
+    executionStatus: request.execution_status || "",
+    executionResults: request.execution_results || [],
+    serverSynced: true,
+  };
+}
+
+function buildServerAiActions(data) {
+  const byOrderCode = new Map();
+  for (const request of getServerAiRequests(data)) {
+    if (!request.order_code) {
+      continue;
+    }
+
+    const action = actionFromServerRequest(request);
+    if (!action) {
+      continue;
+    }
+
+    const existing = byOrderCode.get(request.order_code);
+    if (!existing || serverRequestTimestamp(request) >= existing.timestamp) {
+      byOrderCode.set(request.order_code, {
+        timestamp: serverRequestTimestamp(request),
+        action,
+      });
+    }
+  }
+
+  return new Map(
+    [...byOrderCode.entries()].map(([orderCode, value]) => [orderCode, value.action]),
+  );
 }
 
 function syncAdminActionsFromServer(data) {
@@ -419,7 +499,7 @@ function getAiQueueRequests() {
   const orders = Array.isArray(state.data?.orders) ? state.data.orders : [];
   return orders
     .map((order) => {
-      const action = getAdminAction(order);
+      const action = state.adminActions[order.order_code] || {};
       return action.status === "pending_ai" ? buildAiRequest(order, action) : null;
     })
     .filter(Boolean)
@@ -745,6 +825,7 @@ function showUnlock(envelope) {
 
 function showDashboard(data) {
   state.data = data;
+  state.serverAiActions = buildServerAiActions(state.data);
   syncAdminActionsFromServer(state.data);
   unlockPanelEl.hidden = true;
   setDashboardVisible(true);
