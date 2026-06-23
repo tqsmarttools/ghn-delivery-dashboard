@@ -18,6 +18,7 @@ const state = {
   adminActions: loadAdminActions(),
   serverAiActions: new Map(),
   isRefreshing: false,
+  dataLoadPromise: null,
 };
 
 const noteGuidanceByResult = {
@@ -285,6 +286,13 @@ async function loadData() {
     }
   }
   throw new Error("Không tải được dữ liệu dashboard.");
+}
+
+function ensureDataLoad() {
+  if (!state.dataLoadPromise) {
+    state.dataLoadPromise = loadData();
+  }
+  return state.dataLoadPromise;
 }
 
 function base64UrlToBytes(value) {
@@ -704,9 +712,10 @@ async function refreshDashboard() {
 
   setRefreshBusy(true);
   setRefreshStatus("Đang làm mới dữ liệu...");
+  state.dataLoadPromise = null;
 
   try {
-    const loaded = await loadData();
+    const loaded = await ensureDataLoad();
     if (loaded.encrypted) {
       state.encryptedData = loaded.payload;
       if (!state.passphrase) {
@@ -848,6 +857,14 @@ function showUnlock(envelope) {
   unlockPanelEl.hidden = false;
   setDashboardVisible(false);
   syncTimeEl.textContent = `Dữ liệu mã hóa: ${envelope.generated_at || "chưa rõ thời điểm"}`;
+  passwordInputEl.focus();
+}
+
+function showUnlockShell(message = "") {
+  unlockPanelEl.hidden = false;
+  setDashboardVisible(false);
+  syncTimeEl.textContent = "Nhập mật khẩu để mở dashboard";
+  unlockMessageEl.textContent = message;
   passwordInputEl.focus();
 }
 
@@ -1170,9 +1187,22 @@ function bindAiQueue() {
 function bindUnlock() {
   unlockFormEl.addEventListener("submit", async (event) => {
     event.preventDefault();
-    unlockMessageEl.textContent = "Đang mở dữ liệu...";
+    unlockMessageEl.textContent = state.encryptedData
+      ? "Đang mở dữ liệu..."
+      : "Đang tải dữ liệu mới nhất, chờ một chút...";
     try {
       const passphrase = passwordInputEl.value;
+      if (!state.encryptedData) {
+        const loaded = await ensureDataLoad();
+        if (!loaded.encrypted) {
+          state.passphrase = passphrase;
+          passwordInputEl.value = "";
+          unlockMessageEl.textContent = "";
+          showDashboard(loaded.payload);
+          return;
+        }
+        state.encryptedData = loaded.payload;
+      }
       const data = await decryptDashboardData(state.encryptedData, passphrase);
       state.passphrase = passphrase;
       passwordInputEl.value = "";
@@ -1191,12 +1221,20 @@ async function init() {
   bindRefresh();
   bindUnlock();
 
-  const loaded = await loadData();
-  if (loaded.encrypted) {
-    showUnlock(loaded.payload);
-  } else {
-    showDashboard(loaded.payload);
-  }
+  showUnlockShell("Đang tải dữ liệu mới nhất ở nền...");
+  ensureDataLoad()
+    .then((loaded) => {
+      if (loaded.encrypted) {
+        showUnlock(loaded.payload);
+        unlockMessageEl.textContent = "";
+      } else {
+        showDashboard(loaded.payload);
+      }
+    })
+    .catch((error) => {
+      unlockMessageEl.textContent = "Chưa tải được dữ liệu. Kiểm tra mạng rồi bấm Làm mới.";
+      setRefreshStatus(error.message, true);
+    });
 
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
