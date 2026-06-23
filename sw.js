@@ -1,9 +1,9 @@
-const cacheName = "ghn-dashboard-v21";
+const cacheName = "ghn-dashboard-v22";
 const assets = [
   "./",
   "./index.html",
-  "./styles.css?v=17",
-  "./app.js?v=21",
+  "./styles.css?v=18",
+  "./app.js?v=22",
   "./manifest.webmanifest?v=18",
   "./icons/icon-192.png?v=18",
   "./icons/icon-512.png?v=18",
