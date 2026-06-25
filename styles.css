@@ -494,6 +494,11 @@ textarea {
   width: 100%;
 }
 
+.admin-result.is-placeholder {
+  color: var(--ink);
+  font-weight: 900;
+}
+
 .admin-note-hint {
   color: var(--warning);
   font-size: 13px;
