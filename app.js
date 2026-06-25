@@ -567,6 +567,10 @@ function suggestedAiAction(result) {
   return actions[result] || "review";
 }
 
+function syncResultSelectStyle(resultSelect) {
+  resultSelect.classList.toggle("is-placeholder", resultSelect.value === "not_called");
+}
+
 function buildAiRequest(order, action) {
   const requestedAt = action.requestedAt || action.updatedAt || new Date().toISOString();
   return {
@@ -1075,6 +1079,7 @@ function renderCards() {
     if (savedAction.result) {
       resultSelect.value = savedAction.result;
     }
+    syncResultSelectStyle(resultSelect);
     if (savedAction.note) {
       noteInput.value = savedAction.note;
     }
@@ -1143,6 +1148,7 @@ function renderCards() {
 
     resultSelect.addEventListener("change", () => {
       const selectedOption = resultSelect.selectedOptions[0];
+      syncResultSelectStyle(resultSelect);
       noteHint.classList.remove("is-ok");
       noteHint.textContent =
         selectedOption?.dataset.requiresNote === "true"
