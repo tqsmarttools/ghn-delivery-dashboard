@@ -306,18 +306,34 @@ function getEmbeddedAiInboxConfig() {
   return normalizeAiInboxConfig(state.data?.ai_inbox || state.data?.aiInbox || {});
 }
 
-function loadAiInboxConfig() {
+function loadStoredAiInboxConfig() {
   try {
-    const localConfig = normalizeAiInboxConfig(
+    return normalizeAiInboxConfig(
       JSON.parse(localStorage.getItem(aiInboxConfigStorageKey)) || {},
     );
-    if (localConfig.url && localConfig.key) {
-      return localConfig;
-    }
   } catch {
-    // Fall back to the encrypted dashboard payload after unlock.
+    return { url: "", key: "" };
   }
-  return getEmbeddedAiInboxConfig();
+}
+
+function loadAiInboxConfig() {
+  const embeddedConfig = getEmbeddedAiInboxConfig();
+  if (embeddedConfig.url && embeddedConfig.key) {
+    try {
+      const storedConfig = loadStoredAiInboxConfig();
+      if (
+        storedConfig.url &&
+        (storedConfig.url !== embeddedConfig.url || storedConfig.key !== embeddedConfig.key)
+      ) {
+        localStorage.removeItem(aiInboxConfigStorageKey);
+      }
+    } catch {
+      // Use the centrally published inbox config even if local storage is unavailable.
+    }
+    return embeddedConfig;
+  }
+
+  return loadStoredAiInboxConfig();
 }
 
 function saveAiInboxConfig(config) {
@@ -620,19 +636,21 @@ function buildAiQueuePayload() {
   };
 }
 
-function aiQueueSignature(payload) {
-  return payload.requests
+function aiQueueSignature(payload, config = loadAiInboxConfig()) {
+  const requestSignature = payload.requests
     .map((request) => `${request.request_id}:${request.updated_at}:${request.status}`)
     .join("|");
+  return `${config.url}|${requestSignature}`;
 }
 
 async function maybeAutoSendAiQueue() {
   const payload = buildAiQueuePayload();
-  if (!payload.request_count || !hasAiInboxConfig()) {
+  const config = loadAiInboxConfig();
+  if (!payload.request_count || !config.url || !config.key) {
     return;
   }
 
-  const signature = aiQueueSignature(payload);
+  const signature = aiQueueSignature(payload, config);
   if (!signature || localStorage.getItem(aiInboxLastAutoSendSignatureKey) === signature) {
     return;
   }
