@@ -24,6 +24,11 @@ const state = {
 };
 
 const noteGuidanceByResult = {
+  redeliver: "Có thể ghi ngắn: khách xác nhận vẫn nhận hàng, yêu cầu giao lại.",
+  update_info_redeliver: "Cần ghi SĐT mới hoặc địa chỉ mới đầy đủ. Ví dụ: SĐT mới 09..., hoặc ấp/xã/huyện/tỉnh...",
+  complain_driver_redeliver: "Cần ghi khách xác nhận thực tế thế nào, ví dụ: khách nói shipper không gọi nhưng báo không nghe máy.",
+  schedule_note_redeliver: "Cần ghi ngày/giờ hoặc ghi chú giao hàng rõ ràng, ví dụ: giao sau 17h hôm nay, gọi trước 30 phút.",
+  ignore_return: "AI sẽ không thao tác GHN; đơn này để shop cho hoàn/bỏ qua.",
   shipper_did_not_call: "Cần ghi chú khách xác nhận thế nào, ví dụ: khách nói không có cuộc gọi nhỡ.",
   info_correct_redeliver: "Cần ghi chú ngắn: khách xác nhận SĐT/địa chỉ đúng, nếu có giờ giao thì ghi thêm.",
   wrong_address_new_address: "Cần ghi địa chỉ mới đầy đủ: ấp/xã/huyện/tỉnh và ghi chú đường đi nếu có.",
@@ -542,6 +547,11 @@ function buildCustomerMessage(order) {
 
 function suggestedAiAction(result) {
   const actions = {
+    redeliver: "redeliver",
+    update_info_redeliver: "update_info_and_redeliver",
+    complain_driver_redeliver: "complain_driver_and_redeliver",
+    schedule_note_redeliver: "schedule_redelivery",
+    ignore_return: "ignore_return",
     customer_confirm_receive: "redeliver",
     shipper_did_not_call: "complain_driver_and_redeliver",
     info_correct_redeliver: "redeliver",
