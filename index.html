@@ -127,18 +127,13 @@
         <label>
           Kết quả gọi khách
           <select class="admin-result">
-            <option value="not_called">Chưa gọi</option>
-            <option value="customer_confirm_receive">Khách xác nhận nhận hàng</option>
-            <option value="shipper_did_not_call" data-requires-note="true">Shipper không gọi khách</option>
-            <option value="info_correct_redeliver" data-requires-note="true">Thông tin đúng, giao lại</option>
-            <option value="wrong_address_new_address" data-requires-note="true">Sai địa chỉ, đã có địa chỉ mới</option>
-            <option value="wrong_phone_new_phone" data-requires-note="true">Sai SĐT / đổi SĐT nhận hàng</option>
+            <option value="not_called">Chọn cách xử lý</option>
+            <option value="redeliver">Yêu cầu giao lại</option>
+            <option value="update_info_redeliver" data-requires-note="true">Sửa thông tin rồi giao lại</option>
             <option value="cod_new_amount" data-requires-note="true">Chỉnh COD rồi giao lại</option>
-            <option value="customer_schedule_redeliver" data-requires-note="true">Khách hẹn ngày/giờ giao lại</option>
-            <option value="customer_refuse">Khách đổi ý không mua</option>
-            <option value="shop_no_answer">Shop gọi không nghe máy</option>
-            <option value="phone_unreachable_blocked" data-requires-note="true">Số không liên lạc được / chặn số</option>
-            <option value="manual_done" data-requires-note="true">Đã xử lý thủ công</option>
+            <option value="complain_driver_redeliver" data-requires-note="true">Khiếu nại shipper báo sai</option>
+            <option value="schedule_note_redeliver" data-requires-note="true">Hẹn giờ / thêm ghi chú giao hàng</option>
+            <option value="ignore_return">Cho hoàn / bỏ qua</option>
           </select>
         </label>
         <label>
@@ -152,6 +147,6 @@
       </article>
     </template>
 
-    <script src="./app.js?v=24" type="module"></script>
+    <script src="./app.js?v=25" type="module"></script>
   </body>
 </html>
