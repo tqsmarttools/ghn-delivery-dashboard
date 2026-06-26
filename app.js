@@ -3,7 +3,7 @@ const dataSources = [
   { type: "plain", url: "./data/latest.json" },
   { type: "plain", url: "./data/sample-orders.json" },
 ];
-const appShellVersion = "29";
+const appShellVersion = "30";
 
 const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
 const aiInboxConfigStorageKey = "ghn-dashboard-ai-inbox-config-v1";
@@ -132,8 +132,8 @@ function saveAdminAction(orderCode, action) {
 }
 
 function getAdminAction(order) {
-  const localAction = state.adminActions[order.order_code] || {};
-  const serverAction = state.serverAiActions.get(order.order_code);
+  const localAction = currentActionForLatestFailure(order, state.adminActions[order.order_code] || {});
+  const serverAction = currentActionForLatestFailure(order, state.serverAiActions.get(order.order_code));
   if (!serverAction) {
     return localAction;
   }
@@ -176,6 +176,36 @@ function isServerAiPending(request) {
 function timestampValue(value) {
   const timestamp = Date.parse(value || "");
   return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function latestFailureTimestamp(order) {
+  return timestampValue(order?.latest_fail_at || order?.latestFailAt);
+}
+
+function actionTimestampForLatestFailure(action) {
+  if (!action?.status) {
+    return 0;
+  }
+  if (action.status === "ai_done") {
+    return timestampValue(action.aiDoneAt || action.updatedAt || action.requestedAt);
+  }
+  return timestampValue(action.requestedAt || action.updatedAt);
+}
+
+function actionHandlesLatestFailure(order, action) {
+  if (!action?.status) {
+    return false;
+  }
+  const failTime = latestFailureTimestamp(order);
+  if (!failTime) {
+    return true;
+  }
+  const actionTime = actionTimestampForLatestFailure(action);
+  return Boolean(actionTime && actionTime >= failTime);
+}
+
+function currentActionForLatestFailure(order, action) {
+  return actionHandlesLatestFailure(order, action) ? action : {};
 }
 
 function fallbackDoneRequestForOrder(orderCode, action, byOrderCode) {
@@ -624,6 +654,7 @@ function buildAiRequest(order, action) {
       customer_phone: cleanPhone(order.customer_phone),
       driver_name: order.driver_name || "",
       driver_phone: cleanPhone(order.driver_phone),
+      latest_fail_at: order.latest_fail_at || "",
       latest_reason: order.latest_reason || "",
       fail_count: Number(order.fail_count || 0),
       recommended_action: order.recommended_action || "",
@@ -636,7 +667,9 @@ function getAiQueueRequests() {
   return orders
     .map((order) => {
       const action = state.adminActions[order.order_code] || {};
-      return action.status === "pending_ai" ? buildAiRequest(order, action) : null;
+      return action.status === "pending_ai" && actionHandlesLatestFailure(order, action)
+        ? buildAiRequest(order, action)
+        : null;
     })
     .filter(Boolean)
     .sort((left, right) => String(left.requested_at).localeCompare(String(right.requested_at)));
