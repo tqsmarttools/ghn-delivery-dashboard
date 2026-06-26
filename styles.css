@@ -485,7 +485,6 @@ dd {
 
 .ai-history-note {
   color: var(--danger);
-  font-weight: 900;
 }
 
 select,
