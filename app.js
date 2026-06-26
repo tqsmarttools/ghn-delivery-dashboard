@@ -3,7 +3,7 @@ const dataSources = [
   { type: "plain", url: "./data/latest.json" },
   { type: "plain", url: "./data/sample-orders.json" },
 ];
-const appShellVersion = "34";
+const appShellVersion = "35";
 
 const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
 const aiInboxConfigStorageKey = "ghn-dashboard-ai-inbox-config-v1";
