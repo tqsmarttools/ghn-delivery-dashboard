@@ -483,6 +483,11 @@ dd {
   margin: 4px 0 0;
 }
 
+.ai-history-note {
+  color: var(--danger);
+  font-weight: 900;
+}
+
 select,
 textarea {
   border: 1px solid var(--line);
