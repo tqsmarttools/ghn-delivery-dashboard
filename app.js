@@ -3,7 +3,7 @@ const dataSources = [
   { type: "plain", url: "./data/latest.json" },
   { type: "plain", url: "./data/sample-orders.json" },
 ];
-const appShellVersion = "31";
+const appShellVersion = "32";
 
 const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
 const aiInboxConfigStorageKey = "ghn-dashboard-ai-inbox-config-v1";
@@ -20,6 +20,7 @@ const state = {
   passphrase: loadRememberedPassphrase() || loadSessionPassphrase(),
   adminActions: loadAdminActions(),
   serverAiActions: new Map(),
+  serverAiHandledFailureCounts: new Map(),
   isRefreshing: false,
   dataLoadPromise: null,
 };
@@ -228,9 +229,8 @@ function aiHandledFailCount(order, action) {
 }
 
 function repeatFailureAiNote(order) {
-  const staleAction = staleAiDoneActionForLatestFailure(order);
-  const handledCount = aiHandledFailCount(order, staleAction);
-  return handledCount ? ` (AI đã xử lý lần ${handledCount})` : "";
+  const counts = handledAiFailureCountsBeforeLatestFailure(order);
+  return counts.length ? ` (AI đã xử lý lần ${formatNumberList(counts)})` : "";
 }
 
 function fallbackDoneRequestForOrder(orderCode, action, byOrderCode) {
@@ -273,6 +273,70 @@ function actionFromServerRequest(request) {
     executionResults: request.execution_results || [],
     serverSynced: true,
   };
+}
+
+function buildServerAiHandledFailureCounts(data) {
+  const byOrderCode = new Map();
+  for (const request of getServerAiRequests(data)) {
+    if (!request.order_code || !isServerAiDone(request)) {
+      continue;
+    }
+
+    const handledCount = Number(request.handled_fail_count || request.order_snapshot?.fail_count || 0);
+    if (!handledCount) {
+      continue;
+    }
+
+    const counts = byOrderCode.get(request.order_code) || new Set();
+    counts.add(handledCount);
+    byOrderCode.set(request.order_code, counts);
+  }
+
+  return new Map(
+    [...byOrderCode.entries()].map(([orderCode, counts]) => [
+      orderCode,
+      [...counts].sort((left, right) => left - right),
+    ]),
+  );
+}
+
+function handledAiFailureCountsBeforeLatestFailure(order) {
+  const currentCount = Number(order?.fail_count || 0);
+  const counts = new Set();
+
+  for (const handledCount of state.serverAiHandledFailureCounts.get(order.order_code) || []) {
+    if (handledCount > 0 && (!currentCount || handledCount < currentCount)) {
+      counts.add(handledCount);
+    }
+  }
+
+  const localAction = state.adminActions[order.order_code];
+  if (localAction?.status === "ai_done" && !actionHandlesLatestFailure(order, localAction)) {
+    const localHandledCount = aiHandledFailCount(order, localAction);
+    if (localHandledCount) {
+      counts.add(localHandledCount);
+    }
+  }
+
+  if (!counts.size) {
+    const staleAction = staleAiDoneActionForLatestFailure(order);
+    const fallbackCount = aiHandledFailCount(order, staleAction);
+    if (fallbackCount) {
+      counts.add(fallbackCount);
+    }
+  }
+
+  return [...counts].sort((left, right) => left - right);
+}
+
+function formatNumberList(values) {
+  if (values.length <= 1) {
+    return String(values[0] || "");
+  }
+  if (values.length === 2) {
+    return `${values[0]} và ${values[1]}`;
+  }
+  return `${values.slice(0, -1).join(", ")} và ${values[values.length - 1]}`;
 }
 
 function buildServerAiActions(data) {
@@ -1032,6 +1096,7 @@ function showUnlockShell(message = "") {
 
 function showDashboard(data) {
   state.data = data;
+  state.serverAiHandledFailureCounts = buildServerAiHandledFailureCounts(state.data);
   state.serverAiActions = buildServerAiActions(state.data);
   syncAdminActionsFromServer(state.data);
   unlockPanelEl.hidden = true;
