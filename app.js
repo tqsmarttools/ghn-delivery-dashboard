@@ -3,7 +3,7 @@ const dataSources = [
   { type: "plain", url: "./data/latest.json" },
   { type: "plain", url: "./data/sample-orders.json" },
 ];
-const appShellVersion = "33";
+const appShellVersion = "34";
 
 const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
 const aiInboxConfigStorageKey = "ghn-dashboard-ai-inbox-config-v1";
@@ -1187,7 +1187,15 @@ function renderCards() {
     node.querySelector(".customer-call").href = phoneLink(order.customer_phone);
     node.querySelector(".shipper-call").href = phoneLink(order.driver_phone);
     node.querySelector(".reason").textContent = order.latest_reason || "Chưa có lý do";
-    node.querySelector(".fail-count").textContent = `${order.fail_count || 0} lần${repeatFailureAiNote(order)}`;
+    const failCountEl = node.querySelector(".fail-count");
+    failCountEl.textContent = `${order.fail_count || 0} lần`;
+    const aiNote = repeatFailureAiNote(order);
+    if (aiNote) {
+      const aiNoteEl = document.createElement("span");
+      aiNoteEl.className = "ai-history-note";
+      aiNoteEl.textContent = aiNote;
+      failCountEl.appendChild(aiNoteEl);
+    }
     node.querySelector(".shipper").textContent =
       `${order.driver_name || "Chưa có"} - ${order.driver_phone || ""}`;
     node.querySelector(".recommendation").textContent =
