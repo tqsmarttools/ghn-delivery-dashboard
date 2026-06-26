@@ -3,7 +3,7 @@ const dataSources = [
   { type: "plain", url: "./data/latest.json" },
   { type: "plain", url: "./data/sample-orders.json" },
 ];
-const appShellVersion = "30";
+const appShellVersion = "31";
 
 const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
 const aiInboxConfigStorageKey = "ghn-dashboard-ai-inbox-config-v1";
@@ -208,6 +208,31 @@ function currentActionForLatestFailure(order, action) {
   return actionHandlesLatestFailure(order, action) ? action : {};
 }
 
+function staleAiDoneActionForLatestFailure(order) {
+  const candidates = [
+    state.serverAiActions.get(order.order_code),
+    state.adminActions[order.order_code],
+  ];
+  return (
+    candidates.find((action) => action?.status === "ai_done" && !actionHandlesLatestFailure(order, action)) || null
+  );
+}
+
+function aiHandledFailCount(order, action) {
+  const handledCount = Number(action?.handledFailCount || action?.failCount || 0);
+  const currentCount = Number(order?.fail_count || 0);
+  if (handledCount > 0 && (!currentCount || handledCount < currentCount)) {
+    return handledCount;
+  }
+  return currentCount > 1 ? currentCount - 1 : 0;
+}
+
+function repeatFailureAiNote(order) {
+  const staleAction = staleAiDoneActionForLatestFailure(order);
+  const handledCount = aiHandledFailCount(order, staleAction);
+  return handledCount ? ` (AI đã xử lý lần ${handledCount})` : "";
+}
+
 function fallbackDoneRequestForOrder(orderCode, action, byOrderCode) {
   const matched = byOrderCode.get(orderCode);
   if (!matched) {
@@ -242,6 +267,8 @@ function actionFromServerRequest(request) {
     updatedAt: request.updated_at || request.imported_at || null,
     status,
     aiDoneAt: request.execution_updated_at || request.updated_at || null,
+    handledFailCount: Number(request.handled_fail_count || 0),
+    handledLatestFailAt: request.handled_latest_fail_at || null,
     executionStatus: request.execution_status || "",
     executionResults: request.execution_results || [],
     serverSynced: true,
@@ -1106,7 +1133,7 @@ function renderCards() {
     node.querySelector(".customer-call").href = phoneLink(order.customer_phone);
     node.querySelector(".shipper-call").href = phoneLink(order.driver_phone);
     node.querySelector(".reason").textContent = order.latest_reason || "Chưa có lý do";
-    node.querySelector(".fail-count").textContent = `${order.fail_count || 0} lần`;
+    node.querySelector(".fail-count").textContent = `${order.fail_count || 0} lần${repeatFailureAiNote(order)}`;
     node.querySelector(".shipper").textContent =
       `${order.driver_name || "Chưa có"} - ${order.driver_phone || ""}`;
     node.querySelector(".recommendation").textContent =
@@ -1193,6 +1220,8 @@ function renderCards() {
       saveAdminAction(order.order_code, {
         requestId: `${order.order_code}-${requestedAt.replace(/[^\d]/g, "")}`,
         requestedAt,
+        failCount: Number(order.fail_count || 0),
+        latestFailAt: order.latest_fail_at || "",
         result: resultSelect.value,
         resultLabel,
         note,
