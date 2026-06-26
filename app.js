@@ -3,7 +3,7 @@ const dataSources = [
   { type: "plain", url: "./data/latest.json" },
   { type: "plain", url: "./data/sample-orders.json" },
 ];
-const appShellVersion = "32";
+const appShellVersion = "33";
 
 const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
 const aiInboxConfigStorageKey = "ghn-dashboard-ai-inbox-config-v1";
@@ -133,7 +133,9 @@ function saveAdminAction(orderCode, action) {
 }
 
 function getAdminAction(order) {
-  const localAction = currentActionForLatestFailure(order, state.adminActions[order.order_code] || {});
+  const rawLocalAction = state.adminActions[order.order_code] || {};
+  const localAction =
+    rawLocalAction.status === "pending_ai" ? currentActionForLatestFailure(order, rawLocalAction) : {};
   const serverAction = currentActionForLatestFailure(order, state.serverAiActions.get(order.order_code));
   if (!serverAction) {
     return localAction;
@@ -210,13 +212,8 @@ function currentActionForLatestFailure(order, action) {
 }
 
 function staleAiDoneActionForLatestFailure(order) {
-  const candidates = [
-    state.serverAiActions.get(order.order_code),
-    state.adminActions[order.order_code],
-  ];
-  return (
-    candidates.find((action) => action?.status === "ai_done" && !actionHandlesLatestFailure(order, action)) || null
-  );
+  const serverAction = state.serverAiActions.get(order.order_code);
+  return serverAction?.status === "ai_done" && !actionHandlesLatestFailure(order, serverAction) ? serverAction : null;
 }
 
 function aiHandledFailCount(order, action) {
@@ -307,14 +304,6 @@ function handledAiFailureCountsBeforeLatestFailure(order) {
   for (const handledCount of state.serverAiHandledFailureCounts.get(order.order_code) || []) {
     if (handledCount > 0 && (!currentCount || handledCount < currentCount)) {
       counts.add(handledCount);
-    }
-  }
-
-  const localAction = state.adminActions[order.order_code];
-  if (localAction?.status === "ai_done" && !actionHandlesLatestFailure(order, localAction)) {
-    const localHandledCount = aiHandledFailCount(order, localAction);
-    if (localHandledCount) {
-      counts.add(localHandledCount);
     }
   }
 
