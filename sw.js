@@ -1,9 +1,9 @@
-const cacheName = "ghn-dashboard-v28";
+const cacheName = "ghn-dashboard-v29";
 const assets = [
   "./",
   "./index.html",
   "./styles.css?v=19",
-  "./app.js?v=28",
+  "./app.js?v=29",
   "./manifest.webmanifest?v=18",
   "./icons/icon-192.png?v=18",
   "./icons/icon-512.png?v=18",
@@ -26,11 +26,18 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
-  const isLiveDataRequest = url.pathname.endsWith("/data/latest.enc.json");
+  const isLiveDataRequest =
+    url.pathname.endsWith("/data/latest.enc.json") || url.pathname.endsWith("/data/latest.json");
   if (isLiveDataRequest) {
-    event.respondWith(fetch(event.request));
+    event.respondWith(fetch(event.request, { cache: "no-store" }));
     return;
   }
 
