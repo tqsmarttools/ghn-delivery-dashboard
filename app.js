@@ -3,6 +3,7 @@ const dataSources = [
   { type: "plain", url: "./data/latest.json" },
   { type: "plain", url: "./data/sample-orders.json" },
 ];
+const appShellVersion = "29";
 
 const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
 const aiInboxConfigStorageKey = "ghn-dashboard-ai-inbox-config-v1";
@@ -347,10 +348,25 @@ function hasAiInboxConfig() {
   return Boolean(config.url && config.key);
 }
 
+function resolveDataSourceUrl(source) {
+  const url = new URL(source.url, window.location.href);
+  const isLiveDashboardData = url.pathname.endsWith("/data/latest.enc.json") ||
+    url.pathname.endsWith("/data/latest.json");
+  if (isLiveDashboardData) {
+    url.searchParams.set("cache_bust", String(Date.now()));
+  }
+  return url.href;
+}
+
 async function loadData() {
   for (const source of dataSources) {
     try {
-      const response = await fetch(source.url, { cache: "no-store" });
+      const response = await fetch(resolveDataSourceUrl(source), {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache",
+        },
+      });
       if (response.ok) {
         const payload = await response.json();
         return { encrypted: source.type === "encrypted", payload };
@@ -1340,7 +1356,10 @@ async function init() {
     });
 
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
+    navigator.serviceWorker
+      .register(`./sw.js?v=${appShellVersion}`)
+      .then((registration) => registration.update())
+      .catch(() => {});
   }
 }
 
