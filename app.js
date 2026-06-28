@@ -3,7 +3,7 @@ const dataSources = [
   { type: "plain", url: "./data/latest.json" },
   { type: "plain", url: "./data/sample-orders.json" },
 ];
-const appShellVersion = "41";
+const appShellVersion = "42";
 const defaultAiWalletBalanceVnd = 50000;
 
 const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
