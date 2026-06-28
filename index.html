@@ -12,7 +12,7 @@
     <link rel="manifest" href="./manifest.webmanifest?v=18" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png?v=18" />
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=18" />
-    <link rel="stylesheet" href="./styles.css?v=23" />
+    <link rel="stylesheet" href="./styles.css?v=24" />
   </head>
   <body>
     <div id="pullRefreshIndicator" class="pull-refresh-indicator" hidden>
@@ -28,14 +28,32 @@
           <p id="refreshStatus" class="refresh-status" aria-live="polite"></p>
         </div>
         <div class="header-actions">
-          <button id="refreshDashboard" class="refresh-button" type="button">Làm mới</button>
+          <div class="header-icons" aria-label="Truy cập nhanh">
+            <button class="header-icon-button" type="button" aria-label="Tin nhắn">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M4 6h16v12H4z" />
+                <path d="m4 7 8 6 8-6" />
+              </svg>
+              <span class="icon-dot is-green"></span>
+            </button>
+            <button class="header-icon-button" type="button" aria-label="Thông báo">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+                <path d="M10 21h4" />
+              </svg>
+              <span class="icon-dot is-red"></span>
+            </button>
+            <img class="header-logo" src="./icons/apple-touch-icon.png?v=18" alt="Thiên Quang" />
+          </div>
           <section id="aiWallet" class="ai-wallet" aria-label="Ví AI">
-            <p class="ai-wallet-line">
-              <span aria-hidden="true">💰</span>
-              <span>Ví AI:</span>
-              <span id="aiWalletBalance" class="ai-wallet-balance">50.000đ</span>
-            </p>
-            <p id="aiWalletStatus" class="ai-wallet-status">Sẵn sàng xử lý</p>
+            <span class="ai-wallet-icon" aria-hidden="true">💰</span>
+            <div class="ai-wallet-copy">
+              <p class="ai-wallet-line">
+                <span>Ví AI:</span>
+                <span id="aiWalletBalance" class="ai-wallet-balance">50.000đ</span>
+              </p>
+              <p id="aiWalletStatus" class="ai-wallet-status">Sẵn sàng xử lý</p>
+            </div>
           </section>
         </div>
       </div>
@@ -157,6 +175,6 @@
       </article>
     </template>
 
-    <script src="./app.js?v=37" type="module"></script>
+    <script src="./app.js?v=38" type="module"></script>
   </body>
 </html>
