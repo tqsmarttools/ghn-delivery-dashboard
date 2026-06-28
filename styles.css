@@ -154,10 +154,22 @@ h1 {
   background: rgb(255 255 255 / 0.09);
   border: 1px solid rgb(191 219 254 / 0.28);
   border-radius: 14px;
+  color: inherit;
+  cursor: pointer;
   display: flex;
+  font: inherit;
   gap: 8px;
   min-width: 156px;
   padding: 7px 10px;
+}
+
+.ai-wallet:active {
+  transform: translateY(1px);
+}
+
+.ai-wallet:focus-visible {
+  outline: 2px solid rgb(147 197 253 / 0.8);
+  outline-offset: 2px;
 }
 
 .ai-wallet-icon {
