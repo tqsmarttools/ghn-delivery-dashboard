@@ -86,11 +86,9 @@ h1 {
 
 .header-icons {
   align-items: center;
-  background: rgb(255 255 255 / 0.06);
-  border-radius: 10px;
   display: flex;
-  gap: 9px;
-  padding: 6px 7px;
+  gap: 11px;
+  padding-right: 2px;
 }
 
 .header-icon-button {
@@ -99,16 +97,17 @@ h1 {
   border: 0;
   color: #e2e8f0;
   display: inline-flex;
-  height: 30px;
+  height: 34px;
   justify-content: center;
   padding: 0;
   position: relative;
-  width: 30px;
+  width: 34px;
 }
 
 .header-icon-button svg {
+  filter: drop-shadow(0 2px 5px rgb(0 0 0 / 0.28));
   fill: none;
-  height: 25px;
+  height: 27px;
   stroke: currentcolor;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -136,10 +135,15 @@ h1 {
 
 .header-logo {
   background: #fff;
-  border-radius: 10px;
+  border: 2px solid rgb(255 255 255 / 0.85);
+  border-radius: 999px;
   display: block;
   height: 36px;
   object-fit: cover;
+  width: 36px;
+}
+
+.shop-avatar-button {
   width: 36px;
 }
 
