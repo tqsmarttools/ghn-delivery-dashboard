@@ -3,7 +3,8 @@ const dataSources = [
   { type: "plain", url: "./data/latest.json" },
   { type: "plain", url: "./data/sample-orders.json" },
 ];
-const appShellVersion = "35";
+const appShellVersion = "36";
+const defaultAiWalletBalanceVnd = 50000;
 
 const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
 const aiInboxConfigStorageKey = "ghn-dashboard-ai-inbox-config-v1";
@@ -51,6 +52,9 @@ const unlockMessageEl = document.querySelector("#unlockMessage");
 const passwordInputEl = document.querySelector("#dashboardPassword");
 const refreshButtonEl = document.querySelector("#refreshDashboard");
 const refreshStatusEl = document.querySelector("#refreshStatus");
+const aiWalletEl = document.querySelector("#aiWallet");
+const aiWalletBalanceEl = document.querySelector("#aiWalletBalance");
+const aiWalletStatusEl = document.querySelector("#aiWalletStatus");
 const pullRefreshIndicatorEl = document.querySelector("#pullRefreshIndicator");
 const searchPanelEl = document.querySelector("#searchPanel");
 const searchInputEl = document.querySelector("#orderSearch");
@@ -881,6 +885,44 @@ function renderAiQueuePanel() {
   setQueueMessage("");
 }
 
+function numberValue(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function getAiWallet(data = state.data) {
+  const wallet = data?.ai_wallet || data?.aiWallet || {};
+  const balance = numberValue(
+    wallet.balance_vnd ?? wallet.balanceVnd ?? wallet.balance ?? defaultAiWalletBalanceVnd,
+    defaultAiWalletBalanceVnd,
+  );
+  return {
+    balanceVnd: Math.max(0, balance),
+  };
+}
+
+function formatVnd(amount) {
+  return `${Math.round(numberValue(amount)).toLocaleString("vi-VN")}đ`;
+}
+
+function walletStatus(balanceVnd) {
+  if (balanceVnd <= 0) {
+    return { state: "empty", text: "Hết tiền, cần nạp" };
+  }
+  if (balanceVnd < 10000) {
+    return { state: "low", text: "Sắp hết tiền" };
+  }
+  return { state: "ready", text: "Sẵn sàng xử lý" };
+}
+
+function renderAiWallet(data = state.data) {
+  const wallet = getAiWallet(data);
+  const status = walletStatus(wallet.balanceVnd);
+  aiWalletBalanceEl.textContent = formatVnd(wallet.balanceVnd);
+  aiWalletStatusEl.textContent = status.text;
+  aiWalletEl.dataset.state = status.state;
+}
+
 function priorityClass(priority) {
   return priority === "Cao" ? "high" : "medium";
 }
@@ -1091,6 +1133,7 @@ function showDashboard(data) {
   unlockPanelEl.hidden = true;
   setDashboardVisible(true);
   syncTimeEl.textContent = `Cập nhật: ${state.data.generated_at || "dữ liệu mẫu"}`;
+  renderAiWallet(state.data);
   renderSummary(state.data);
   renderSearchMeta();
   renderAiQueuePanel();
