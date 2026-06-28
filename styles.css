@@ -88,7 +88,8 @@ h1 {
   align-items: center;
   display: flex;
   gap: 10px;
-  padding-right: 2px;
+  justify-content: flex-end;
+  padding-right: 0;
 }
 
 .header-icon-button {
@@ -158,9 +159,10 @@ h1 {
   cursor: pointer;
   display: flex;
   font: inherit;
-  gap: 8px;
-  min-width: 156px;
-  padding: 7px 10px;
+  gap: 9px;
+  justify-content: space-between;
+  min-width: 166px;
+  padding: 6px 9px 6px 11px;
 }
 
 .ai-wallet:active {
@@ -181,7 +183,7 @@ h1 {
 .ai-wallet-copy {
   flex: 1 1 auto;
   min-width: 0;
-  text-align: right;
+  text-align: left;
 }
 
 .ai-wallet-line,
