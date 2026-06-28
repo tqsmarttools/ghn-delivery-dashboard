@@ -3,7 +3,7 @@ const dataSources = [
   { type: "plain", url: "./data/latest.json" },
   { type: "plain", url: "./data/sample-orders.json" },
 ];
-const appShellVersion = "37";
+const appShellVersion = "38";
 const defaultAiWalletBalanceVnd = 50000;
 
 const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
@@ -958,8 +958,10 @@ function setRefreshStatus(message, isError = false) {
 
 function setRefreshBusy(isBusy) {
   state.isRefreshing = isBusy;
-  refreshButtonEl.disabled = isBusy;
-  refreshButtonEl.textContent = isBusy ? "Đang..." : "Làm mới";
+  if (refreshButtonEl) {
+    refreshButtonEl.disabled = isBusy;
+    refreshButtonEl.textContent = isBusy ? "Đang..." : "Làm mới";
+  }
 }
 
 async function refreshDashboard() {
@@ -1103,6 +1105,10 @@ function bindPullToRefresh() {
 }
 
 function bindRefresh() {
+  if (!refreshButtonEl) {
+    bindPullToRefresh();
+    return;
+  }
   refreshButtonEl.addEventListener("click", () => {
     void refreshDashboard();
   });
