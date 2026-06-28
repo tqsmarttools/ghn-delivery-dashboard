@@ -103,39 +103,37 @@ h1 {
 .ai-wallet {
   background: rgb(255 255 255 / 0.09);
   border: 1px solid rgb(191 219 254 / 0.28);
-  border-radius: 16px;
-  min-width: 136px;
-  padding: 9px 11px;
+  border-radius: 14px;
+  min-width: 156px;
+  padding: 7px 10px;
   text-align: right;
 }
 
-.ai-wallet-label,
+.ai-wallet-line,
 .ai-wallet-balance,
 .ai-wallet-status {
   margin: 0;
 }
 
-.ai-wallet-label {
-  color: #93c5fd;
-  font-size: 11px;
+.ai-wallet-line {
+  color: #fff;
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .ai-wallet-balance {
-  color: #fff;
-  font-size: 17px;
-  font-weight: 900;
-  line-height: 1.18;
-  margin-top: 2px;
+  color: #fecaca;
+  font-weight: 800;
 }
 
 .ai-wallet-status {
   color: #86efac;
   font-size: 11px;
-  font-weight: 800;
-  margin-top: 3px;
+  font-style: italic;
+  font-weight: 500;
+  margin-top: 2px;
 }
 
 .ai-wallet[data-state="low"] .ai-wallet-status {
