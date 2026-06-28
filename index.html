@@ -12,7 +12,7 @@
     <link rel="manifest" href="./manifest.webmanifest?v=18" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png?v=18" />
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=18" />
-    <link rel="stylesheet" href="./styles.css?v=28" />
+    <link rel="stylesheet" href="./styles.css?v=30" />
   </head>
   <body>
     <div id="pullRefreshIndicator" class="pull-refresh-indicator" hidden>
@@ -21,11 +21,9 @@
 
     <header class="app-header">
       <div class="header-main">
-        <div>
+        <div class="header-copy">
           <p class="eyebrow">Thiên Quang</p>
           <h1>Đơn cần gọi khách</h1>
-          <p id="syncTime" class="sync-time">Đang tải dữ liệu...</p>
-          <p id="refreshStatus" class="refresh-status" aria-live="polite"></p>
         </div>
         <div class="header-actions">
           <div class="header-icons" aria-label="Truy cập nhanh">
@@ -57,6 +55,10 @@
             </div>
             <span class="ai-wallet-icon" aria-hidden="true">💰</span>
           </button>
+        </div>
+        <div class="header-meta">
+          <p id="syncTime" class="sync-time">Đang tải dữ liệu...</p>
+          <p id="refreshStatus" class="refresh-status" aria-live="polite"></p>
         </div>
       </div>
     </header>
@@ -108,7 +110,7 @@
             type="search"
             inputmode="search"
             autocomplete="off"
-            placeholder="Mã vận đơn, SĐT, 4 số cuối, tên khách..."
+            placeholder="Mã vận đơn, SĐT, 4 số cuối..."
           />
           <button id="clearSearch" type="button" hidden>Xóa</button>
         </div>
@@ -177,6 +179,6 @@
       </article>
     </template>
 
-    <script src="./app.js?v=42" type="module"></script>
+    <script src="./app.js?v=44" type="module"></script>
   </body>
 </html>
