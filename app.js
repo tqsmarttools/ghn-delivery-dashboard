@@ -3,7 +3,7 @@ const dataSources = [
   { type: "plain", url: "./data/latest.json" },
   { type: "plain", url: "./data/sample-orders.json" },
 ];
-const appShellVersion = "40";
+const appShellVersion = "41";
 const defaultAiWalletBalanceVnd = 50000;
 
 const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
@@ -923,6 +923,12 @@ function renderAiWallet(data = state.data) {
   aiWalletEl.dataset.state = status.state;
 }
 
+function bindAiWallet() {
+  aiWalletEl.addEventListener("click", () => {
+    setRefreshStatus("Ví AI: nạp tiền sẽ được bổ sung ở bước tiếp theo.");
+  });
+}
+
 function priorityClass(priority) {
   return priority === "Cao" ? "high" : "medium";
 }
@@ -1500,6 +1506,7 @@ async function init() {
   bindSearch();
   bindAiQueue();
   bindRefresh();
+  bindAiWallet();
   bindUnlock();
 
   showUnlockShell("Đang tải dữ liệu mới nhất ở nền...");
