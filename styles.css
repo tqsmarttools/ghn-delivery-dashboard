@@ -43,6 +43,14 @@ body {
   justify-content: space-between;
 }
 
+.header-actions {
+  align-items: flex-end;
+  display: grid;
+  flex: 0 0 auto;
+  gap: 10px;
+  justify-items: end;
+}
+
 .eyebrow {
   color: #93c5fd;
   font-size: 12px;
@@ -90,6 +98,52 @@ h1 {
 
 .refresh-button:disabled {
   opacity: 0.7;
+}
+
+.ai-wallet {
+  background: rgb(255 255 255 / 0.09);
+  border: 1px solid rgb(191 219 254 / 0.28);
+  border-radius: 16px;
+  min-width: 136px;
+  padding: 9px 11px;
+  text-align: right;
+}
+
+.ai-wallet-label,
+.ai-wallet-balance,
+.ai-wallet-status {
+  margin: 0;
+}
+
+.ai-wallet-label {
+  color: #93c5fd;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ai-wallet-balance {
+  color: #fff;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.18;
+  margin-top: 2px;
+}
+
+.ai-wallet-status {
+  color: #86efac;
+  font-size: 11px;
+  font-weight: 800;
+  margin-top: 3px;
+}
+
+.ai-wallet[data-state="low"] .ai-wallet-status {
+  color: #fcd34d;
+}
+
+.ai-wallet[data-state="empty"] .ai-wallet-status {
+  color: #fecaca;
 }
 
 .pull-refresh-indicator {
