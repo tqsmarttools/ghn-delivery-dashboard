@@ -87,7 +87,7 @@ h1 {
 .header-icons {
   align-items: center;
   display: flex;
-  gap: 11px;
+  gap: 10px;
   padding-right: 2px;
 }
 
@@ -97,22 +97,22 @@ h1 {
   border: 0;
   color: #e2e8f0;
   display: inline-flex;
-  height: 34px;
+  height: 36px;
   justify-content: center;
   padding: 0;
   position: relative;
-  width: 34px;
+  width: 36px;
 }
 
 .header-icon-button svg {
   filter: drop-shadow(0 2px 5px rgb(0 0 0 / 0.28));
   fill: none;
-  height: 27px;
+  height: 28px;
   stroke: currentcolor;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 1.9;
-  width: 25px;
+  width: 28px;
 }
 
 .icon-dot {
@@ -134,17 +134,19 @@ h1 {
 }
 
 .header-logo {
-  background: #fff;
-  border: 2px solid rgb(255 255 255 / 0.85);
+  background: transparent;
+  border: 0;
   border-radius: 999px;
   display: block;
-  height: 36px;
+  filter: drop-shadow(0 2px 6px rgb(0 0 0 / 0.32));
+  height: 40px;
   object-fit: cover;
-  width: 36px;
+  width: 40px;
 }
 
 .shop-avatar-button {
-  width: 36px;
+  height: 40px;
+  width: 40px;
 }
 
 .ai-wallet {
