@@ -3,7 +3,7 @@ const dataSources = [
   { type: "plain", url: "./data/latest.json" },
   { type: "plain", url: "./data/sample-orders.json" },
 ];
-const appShellVersion = "45";
+const appShellVersion = "46";
 const defaultAiWalletBalanceVnd = 50000;
 
 const adminActionsStorageKey = "ghn-dashboard-admin-actions-v1";
@@ -962,6 +962,12 @@ function setRefreshStatus(message, isError = false) {
   refreshStatusEl.classList.toggle("is-error", isError);
 }
 
+function formatHeaderTimestamp(value) {
+  const text = String(value || "").trim();
+  const match = text.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(?::\d{2})?/u);
+  return match ? `${match[1]} ${match[2]}` : text;
+}
+
 function setRefreshBusy(isBusy) {
   state.isRefreshing = isBusy;
   if (refreshButtonEl) {
@@ -1125,7 +1131,7 @@ function showUnlock(envelope) {
   state.encryptedData = envelope;
   unlockPanelEl.hidden = false;
   setDashboardVisible(false);
-  syncTimeEl.textContent = `Dữ liệu mã hóa: ${envelope.generated_at || "chưa rõ thời điểm"}`;
+  syncTimeEl.textContent = `Dữ liệu mã hóa: ${formatHeaderTimestamp(envelope.generated_at) || "chưa rõ thời điểm"}`;
   passwordInputEl.focus();
 }
 
@@ -1144,7 +1150,7 @@ function showDashboard(data) {
   syncAdminActionsFromServer(state.data);
   unlockPanelEl.hidden = true;
   setDashboardVisible(true);
-  syncTimeEl.textContent = `Cập nhật: ${state.data.generated_at || "dữ liệu mẫu"}`;
+  syncTimeEl.textContent = `Cập nhật: ${formatHeaderTimestamp(state.data.generated_at) || "dữ liệu mẫu"}`;
   renderAiWallet(state.data);
   renderSummary(state.data);
   renderSearchMeta();
