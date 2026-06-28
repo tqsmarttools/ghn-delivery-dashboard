@@ -12,7 +12,7 @@
     <link rel="manifest" href="./manifest.webmanifest?v=18" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png?v=18" />
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=18" />
-    <link rel="stylesheet" href="./styles.css?v=31" />
+    <link rel="stylesheet" href="./styles.css?v=32" />
   </head>
   <body>
     <div id="pullRefreshIndicator" class="pull-refresh-indicator" hidden>
@@ -24,6 +24,10 @@
         <div class="header-copy">
           <p class="eyebrow">Thiên Quang</p>
           <h1>Đơn cần xử lý</h1>
+          <div class="header-meta">
+            <p id="syncTime" class="sync-time">Đang tải dữ liệu...</p>
+            <p id="refreshStatus" class="refresh-status" aria-live="polite"></p>
+          </div>
         </div>
         <div class="header-actions">
           <div class="header-icons" aria-label="Truy cập nhanh">
@@ -55,10 +59,6 @@
             </div>
             <span class="ai-wallet-icon" aria-hidden="true">💰</span>
           </button>
-        </div>
-        <div class="header-meta">
-          <p id="syncTime" class="sync-time">Đang tải dữ liệu...</p>
-          <p id="refreshStatus" class="refresh-status" aria-live="polite"></p>
         </div>
       </div>
     </header>
